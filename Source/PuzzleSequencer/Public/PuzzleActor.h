@@ -14,7 +14,7 @@ enum class EPuzzleType : uint8
 };
 
 UCLASS()
-class FYP_API APuzzleActor final : public AActor
+class PUZZLESEQUENCER_API APuzzleActor final : public AActor
 {
 	GENERATED_BODY()
 
@@ -22,7 +22,7 @@ public:
 	APuzzleActor();
 
 	virtual void Tick(float DeltaTime) override;
-	
+
 protected:
 	virtual void BeginPlay() override;
 
