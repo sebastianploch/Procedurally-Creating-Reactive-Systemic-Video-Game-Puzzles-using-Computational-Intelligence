@@ -24,16 +24,16 @@ public:
 	virtual ~UPuzzleSequencerNode() override = default;
 
 	UPROPERTY(VisibleDefaultsOnly, Category="PuzzleSequencerNode")
-	UPuzzleSequencer* Graph;
+	UPuzzleSequencer* Graph{nullptr};
 
 	UPROPERTY(BlueprintReadOnly, Category="PuzzleSequencerNode")
-	TArray<UPuzzleSequencerNode*> ParentNodes;
+	TArray<UPuzzleSequencerNode*> ParentNodes{};
 
 	UPROPERTY(BlueprintReadOnly, Category="PuzzleSequencerNode")
-	TArray<UPuzzleSequencerNode*> ChildrenNodes;
+	TArray<UPuzzleSequencerNode*> ChildrenNodes{};
 
 	UPROPERTY(BlueprintReadOnly, Category="PuzzleSequencerNode")
-	TMap<UPuzzleSequencerNode*, UPuzzleSequencerEdge*> Edges;
+	TMap<UPuzzleSequencerNode*, UPuzzleSequencerEdge*> Edges{};
 
 	UFUNCTION(BlueprintCallable, Category="PuzzleSequencerNode")
 	virtual UPuzzleSequencerEdge* GetEdge(UPuzzleSequencerNode* InChildNode);
@@ -48,7 +48,7 @@ public:
 	FText GetDescription() const;
 	virtual FText GetDescription_Implementation() const;
 
-	//////////////////////////////////////////////////////////////////////////
+#pragma region Editor
 #if WITH_EDITORONLY_DATA
 	UPROPERTY(EditDefaultsOnly, Category = "PuzzleSequencerNode")
 	FText NodeTitle;
@@ -90,4 +90,5 @@ public:
 	virtual bool CanCreateConnectionTo(UPuzzleSequencerNode* Other, int32 NumberOfChildrenNodes, FText& ErrorMessage);
 	virtual bool CanCreateConnectionFrom(UPuzzleSequencerNode* Other, int32 NumberOfParentNodes, FText& ErrorMessage);
 #endif
+#pragma endregion Editor
 };

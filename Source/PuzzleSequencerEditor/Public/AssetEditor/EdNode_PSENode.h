@@ -1,15 +1,36 @@
-﻿// 
-
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
+#include "EdGraph/EdGraphNode.h"
+#include "PuzzleSequencerNode.h"
+#include "EdNode_PSENode.generated.h"
 
-/**
- * 
- */
-class PUZZLESEQUENCEREDITOR_API EdNode_PSENode
+UCLASS(MinimalAPI)
+class UEdNode_PSENode : public UEdGraphNode
 {
+	GENERATED_BODY()
+
 public:
-	EdNode_PSENode();
-	~EdNode_PSENode();
+	UEdNode_PSENode();
+
+	UPROPERTY(VisibleAnywhere, Instanced, Category="PuzzleSequencer")
+	UPuzzleSequencerNode* Node{nullptr};
+
+	void SetNode(UPuzzleSequencerNode* InNode);
+	//UEd
+
+	virtual void AllocateDefaultPins() override;
+	virtual FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
+	virtual void PrepareForCopying() override;
+	virtual void AutowireNewNode(UEdGraphPin* FromPin) override;
+
+	virtual FLinearColor GetBackgroundColour() const;
+	virtual UEdGraphPin* GetInputPin() const;
+	virtual UEdGraphPin* GetOutputPin() const;
+
+#pragma region Editor
+#if WITH_EDITOR
+	virtual void PostEditUndo() override;
+#endif
+#pragma endregion Editor
 };

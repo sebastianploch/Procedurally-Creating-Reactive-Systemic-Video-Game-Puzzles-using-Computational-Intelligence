@@ -1,4 +1,14 @@
-﻿// 
+﻿#include "PuzzleSequencerEdge.h"
+#include "PuzzleSequencer.h"
 
+UPuzzleSequencer* UPuzzleSequencerEdge::GetGraph() const
+{
+	return Graph;
+}
 
-#include "PuzzleSequencerEdge.h"
+#if WITH_EDITOR
+void UPuzzleSequencerEdge::SetNodeTitle(const FText& InNewTitle)
+{
+	NodeTitle = InNewTitle;
+}
+#endif

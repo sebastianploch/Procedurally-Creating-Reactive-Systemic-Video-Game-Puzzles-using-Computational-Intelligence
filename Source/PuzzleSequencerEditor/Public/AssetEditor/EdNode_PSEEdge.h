@@ -4,8 +4,13 @@
 #include "EdGraph/EdGraphNode.h"
 #include "EdNode_PSEEdge.generated.h"
 
+class UEdGraph;
+class UPuzzleSequencerEdge;
+class UPuzzleSequencerNode;
+class UEdNode_PSENode;
+
 UCLASS(MinimalAPI)
-class PUZZLESEQUENCEREDITOR_API UEdNode_PSEEdge : public UEdGraphNode
+class UEdNode_PSEEdge : public UEdGraphNode
 {
 	GENERATED_BODY()
 
@@ -13,5 +18,20 @@ public:
 	UEdNode_PSEEdge();
 
 	UPROPERTY()
-	class UEdGraph* Grap;
+	UEdGraph* Graph{nullptr};
+
+	UPROPERTY(VisibleAnywhere, Instanced, Category="PuzzleSequencer")
+	UPuzzleSequencerEdge* Edge{nullptr};
+
+	void SetEdge(UPuzzleSequencerEdge* InEdge);
+
+	virtual void AllocateDefaultPins() override;
+	virtual FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
+	virtual void PinConnectionListChanged(UEdGraphPin* Pin) override;
+	virtual void PrepareForCopying() override;
+
+	virtual UEdGraphPin* GetInputPin() const { return Pins[0]; }
+	virtual UEdGraphPin* GetOutputPin() const { return Pins[1]; }
+
+	void CreateConnections(UEdNode_PSENode* InStart, UEdNode_PSENode* InEnd);
 };
