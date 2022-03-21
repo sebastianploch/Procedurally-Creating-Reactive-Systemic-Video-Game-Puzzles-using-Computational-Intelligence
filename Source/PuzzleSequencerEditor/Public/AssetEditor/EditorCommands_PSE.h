@@ -1,15 +1,13 @@
-﻿// 
-
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 
-/**
- * 
- */
-class PUZZLESEQUENCEREDITOR_API EditorCommands_PSE
+class PUZZLESEQUENCEREDITOR_API FEditorCommands_PSE : public TCommands<FEditorCommands_PSE>
 {
 public:
-	EditorCommands_PSE();
-	~EditorCommands_PSE();
+	FEditorCommands_PSE();
+
+	TSharedPtr<FUICommandInfo> GraphSettings{};
+
+	virtual void RegisterCommands() override;
 };

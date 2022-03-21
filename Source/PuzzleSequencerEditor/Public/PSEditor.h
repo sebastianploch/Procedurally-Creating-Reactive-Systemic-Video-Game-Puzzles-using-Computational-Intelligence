@@ -1,15 +1,21 @@
-﻿// 
+﻿#pragma once
+#include "Modules/ModuleManager.h"
+#include "PSEModule.h"
+#include <IAssetTools.h>
+#include <EdGraphUtilities.h>
 
-#pragma once
-
-#include "CoreMinimal.h"
-
-/**
- * 
- */
-class PUZZLESEQUENCEREDITOR_API PSEditor
+class PUZZLESEQUENCEREDITOR_API FPSEditor : public IPuzzleSequencerEditor
 {
-public:
-	PSEditor();
-	~PSEditor();
+private:
+	virtual void StartupModule() override;
+	virtual void ShutdownModule() override;
+
+	void RegisterAssetTypeAction(IAssetTools& InAssetTools, TShaderRef<IAssetTypeActions> InAction);
+
+private:
+	TArray<TSharedPtr<IAssetTypeActions>> CreatedAssetTypeActions{};
+	EAssetTypeCategories::Type PuzzleSequencerAssetCategoryBit{EAssetTypeCategories::None};
+	TSharedPtr<FGraphPanelNodeFactory> GraphPanelNodeFactory{};
 };
+
+IMPLEMENT_MODULE(FPSEditor, PuzzleSequencerEditor)

@@ -1,15 +1,16 @@
-﻿// 
-
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
+#include "Styling/SlateStyle.h"
 
-/**
- * 
- */
-class PUZZLESEQUENCEREDITOR_API PSEStyle
+class PUZZLESEQUENCEREDITOR_API FPSEStyle
 {
 public:
-	PSEStyle();
-	~PSEStyle();
+	static void Initialise();
+	static void Shutdown();
+
+	static const FName& GetStyleSetName();
+
+private:
+	inline static TSharedPtr<FSlateStyleSet> StyleSet{nullptr};
 };

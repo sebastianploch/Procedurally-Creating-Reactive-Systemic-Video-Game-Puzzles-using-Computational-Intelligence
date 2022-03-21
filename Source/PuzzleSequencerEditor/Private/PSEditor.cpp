@@ -1,13 +1,22 @@
-﻿// 
+﻿#include "PSEditor.h"
+#include "PSENodeFactory.h"
+#include "AssetTypeActions_PSE.h"
+#include "AssetEditor/PSEStyle.h"
 
+#define LOCTEXT_NAMESPACE "Editor_PuzzleSequencer"
 
-#include "PuzzleSequencerEditor/Public/PSEditor.h"
-
-
-PSEditor::PSEditor()
+void FPSEditor::StartupModule()
 {
 }
 
-PSEditor::~PSEditor()
+void FPSEditor::ShutdownModule()
 {
 }
+
+void FPSEditor::RegisterAssetTypeAction(IAssetTools& InAssetTools, TShaderRef<IAssetTypeActions> InAction)
+{
+	InAssetTools.RegisterAssetTypeActions(InAction);
+	CreatedAssetTypeActions.Add(InAction);
+}
+
+#undef LOCTEXT_NAMESPACE
