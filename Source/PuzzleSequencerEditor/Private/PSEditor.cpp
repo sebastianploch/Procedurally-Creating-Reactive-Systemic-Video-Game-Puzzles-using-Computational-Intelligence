@@ -13,7 +13,7 @@ void FPSEditor::ShutdownModule()
 {
 }
 
-void FPSEditor::RegisterAssetTypeAction(IAssetTools& InAssetTools, TShaderRef<IAssetTypeActions> InAction)
+void FPSEditor::RegisterAssetTypeAction(IAssetTools& InAssetTools, TSharedRef<IAssetTypeActions> InAction)
 {
 	InAssetTools.RegisterAssetTypeActions(InAction);
 	CreatedAssetTypeActions.Add(InAction);

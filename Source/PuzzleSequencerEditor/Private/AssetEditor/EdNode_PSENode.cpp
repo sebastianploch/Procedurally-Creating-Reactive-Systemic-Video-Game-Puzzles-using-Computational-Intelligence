@@ -1,4 +1,6 @@
-﻿#include "PuzzleSequencerEditor/Public/AssetEditor/EdNode_PSENode.h"
+﻿#include "AssetEditor/EdNode_PSENode.h"
+#include "AssetEditor/EdGraph_PSE.h"
+#include "PuzzleSequencerNode.h"
 #include "Kismet2/Kismet2NameValidators.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 

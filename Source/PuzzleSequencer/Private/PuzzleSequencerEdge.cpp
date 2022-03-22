@@ -1,5 +1,4 @@
 ﻿#include "PuzzleSequencerEdge.h"
-#include "PuzzleSequencer.h"
 
 UPuzzleSequencer* UPuzzleSequencerEdge::GetGraph() const
 {

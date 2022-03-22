@@ -4,6 +4,12 @@ public class PuzzleSequencer : ModuleRules
 {
     public PuzzleSequencer(ReadOnlyTargetRules Target) : base(Target)
     {
-        PrivateDependencyModuleNames.AddRange(new string[] {"Core", "CoreUObject", "Engine",});
+        PrivateDependencyModuleNames.AddRange(new string[]
+        {
+            "Core",
+            "CoreUObject",
+            "Engine",
+            "GameplayTags"
+        });
     }
 }

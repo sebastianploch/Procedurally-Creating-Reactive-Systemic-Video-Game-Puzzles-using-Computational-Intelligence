@@ -1,6 +1,5 @@
 ﻿#include "PuzzleSequencerNode.h"
 #include "PuzzleSequencer.h"
-#include "PuzzleSequencerEdge.h"
 
 #define LOCTEXT_NAMESPACE "PuzzleSequencerNode"
 

@@ -2,9 +2,11 @@
 
 #include "CoreMinimal.h"
 #include "EdGraph/EdGraphNode.h"
-#include "PuzzleSequencerNode.h"
-#include "SEdNode_PSENode.h"
 #include "EdNode_PSENode.generated.h"
+
+class UPuzzleSequencerNode;
+class UEdNode_PSEEdge;
+class SEdNode_PSENode;
 
 UCLASS(MinimalAPI)
 class UEdNode_PSENode : public UEdGraphNode

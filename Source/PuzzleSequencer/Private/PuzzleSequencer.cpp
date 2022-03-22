@@ -1,4 +1,5 @@
 ﻿#include "PuzzleSequencer.h"
+#include "Engine/Engine.h"
 
 UPuzzleSequencer::UPuzzleSequencer()
 {

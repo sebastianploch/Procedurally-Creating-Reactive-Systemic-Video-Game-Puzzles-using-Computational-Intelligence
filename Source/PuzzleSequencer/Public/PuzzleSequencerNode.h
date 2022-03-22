@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
-#include "UObject/Object.h"
+#include "Templates/SubclassOf.h"
 #include "PuzzleSequencerNode.generated.h"
 
 class UPuzzleSequencer;

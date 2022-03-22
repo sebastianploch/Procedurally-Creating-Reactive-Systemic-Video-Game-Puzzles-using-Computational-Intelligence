@@ -1,6 +1,12 @@
 ﻿#include "AssetEditor/PSEDragConnection.h"
 #include "AssetEditor/EdNode_PSENode.h"
+
 #include "SGraphPanel.h"
+#include "ScopedTransaction.h"
+#include "EdGraph/EdGraph.h"
+#include "Widgets/SBoxPanel.h"
+#include "Widgets/Images/SImage.h"
+#include "Framework/Application/SlateApplication.h"
 
 FPSEDragConnection::FPSEDragConnection(const TSharedRef<SGraphPanel>& InGraphPanel, const FDraggedPinTable& InDraggedPins)
 	: GraphPanel(InGraphPanel),

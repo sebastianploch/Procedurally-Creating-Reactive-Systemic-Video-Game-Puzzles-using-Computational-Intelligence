@@ -1,10 +1,14 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
-#include "GraphEditorDragDropAction.h"
 #include "Input/DragAndDrop.h"
 #include "Input/Reply.h"
+#include "Widgets/SWidget.h"
 #include "SGraphPin.h"
+#include "GraphEditorDragDropAction.h"
+
+class SGraphPanel;
+class UEdGraph;
 
 class FPSEDragConnection : public FGraphEditorDragDropAction
 {

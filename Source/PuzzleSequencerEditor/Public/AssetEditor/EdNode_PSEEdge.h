@@ -4,9 +4,8 @@
 #include "EdGraph/EdGraphNode.h"
 #include "EdNode_PSEEdge.generated.h"
 
-class UEdGraph;
-class UPuzzleSequencerEdge;
 class UPuzzleSequencerNode;
+class UPuzzleSequencerEdge;
 class UEdNode_PSENode;
 
 UCLASS(MinimalAPI)
@@ -16,9 +15,10 @@ class UEdNode_PSEEdge : public UEdGraphNode
 
 public:
 	UEdNode_PSEEdge();
+	virtual ~UEdNode_PSEEdge() override = default;
 
 	UPROPERTY()
-	UEdGraph* Graph{nullptr};
+	class UEdGraph* Graph{nullptr};
 
 	UPROPERTY(VisibleAnywhere, Instanced, Category="PuzzleSequencer")
 	UPuzzleSequencerEdge* Edge{nullptr};
@@ -34,4 +34,7 @@ public:
 	virtual UEdGraphPin* GetOutputPin() const { return Pins[1]; }
 
 	void CreateConnections(UEdNode_PSENode* InStart, UEdNode_PSENode* InEnd);
+
+	UEdNode_PSENode* GetStartNode();
+	UEdNode_PSENode* GetEndNode();
 };

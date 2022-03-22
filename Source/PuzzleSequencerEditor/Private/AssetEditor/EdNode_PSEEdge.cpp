@@ -1,7 +1,5 @@
-﻿#include "PuzzleSequencerEditor/Public/AssetEditor/EdNode_PSEEdge.h"
-#include "EdGraph/EdGraph.h"
+﻿#include "AssetEditor/EdNode_PSEEdge.h"
 #include "PuzzleSequencerEdge.h"
-#include "PuzzleSequencerNode.h"
 #include "AssetEditor/EdNode_PSENode.h"
 
 #define LOCTEXT_NAMESPACE "EdNode_PSEEdge"
@@ -66,6 +64,30 @@ void UEdNode_PSEEdge::CreateConnections(UEdNode_PSENode* InStart, UEdNode_PSENod
 
 	InEnd->GetInputPin()->Modify();
 	Pins[1]->MakeLinkTo(InEnd->GetInputPin());
+}
+
+UEdNode_PSENode* UEdNode_PSEEdge::GetStartNode()
+{
+	if (!Pins[0]->LinkedTo.IsEmpty())
+	{
+		return Cast<UEdNode_PSENode>(Pins[0]->LinkedTo[0]->GetOwningNode());
+	}
+	else
+	{
+		return nullptr;
+	}
+}
+
+UEdNode_PSENode* UEdNode_PSEEdge::GetEndNode()
+{
+	if (!Pins[1]->LinkedTo.IsEmpty())
+	{
+		return Cast<UEdNode_PSENode>(Pins[1]->LinkedTo[0]->GetOwningNode());
+	}
+	else
+	{
+		return nullptr;
+	}
 }
 
 #undef LOCTEXT_NAMESPACE
