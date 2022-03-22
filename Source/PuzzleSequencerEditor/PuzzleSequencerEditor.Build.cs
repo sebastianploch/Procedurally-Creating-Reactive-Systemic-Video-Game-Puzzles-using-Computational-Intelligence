@@ -15,7 +15,12 @@ public class PuzzleSequencerEditor : ModuleRules
             "UnrealEd",
             "GraphEditor",
             "ToolMenus",
-            "AssetTools"
+            "AssetTools",
+            "Kismet",
+            "KismetWidgets",
+            "ApplicationCore",
+            "EditorStyle",
+            "PropertyEditor"
         });
     }
 }

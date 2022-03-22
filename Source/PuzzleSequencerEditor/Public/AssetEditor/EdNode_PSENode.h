@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "EdGraph/EdGraphNode.h"
 #include "PuzzleSequencerNode.h"
+#include "SEdNode_PSENode.h"
 #include "EdNode_PSENode.generated.h"
 
 UCLASS(MinimalAPI)
@@ -17,8 +18,10 @@ public:
 	UPuzzleSequencerNode* Node{nullptr};
 
 	void SetNode(UPuzzleSequencerNode* InNode);
-	//UEd
+	// TODO: 	UEdGraph_GenericGraph* GetGenericGraphEdGraph();
 
+	SEdNode_PSENode* SEdNode{nullptr};
+	
 	virtual void AllocateDefaultPins() override;
 	virtual FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
 	virtual void PrepareForCopying() override;

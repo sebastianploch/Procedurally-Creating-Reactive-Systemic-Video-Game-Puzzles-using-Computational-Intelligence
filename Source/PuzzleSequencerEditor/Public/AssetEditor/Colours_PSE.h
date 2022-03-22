@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 
-namespace GenericGraphColors
+namespace PuzzleSequencerColours
 {
 	namespace NodeBody
 	{
