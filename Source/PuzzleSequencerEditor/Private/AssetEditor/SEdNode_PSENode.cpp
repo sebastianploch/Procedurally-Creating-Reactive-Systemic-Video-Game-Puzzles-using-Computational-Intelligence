@@ -1,15 +1,15 @@
 ﻿#include "AssetEditor/SEdNode_PSENode.h"
 
-#include "AssetEditor/EdNode_PSENode.h"
 #include "AssetEditor/Colours_PSE.h"
-#include "AssetEditor/PSEDragConnection.h"
-
-#include "SGraphPin.h"
+#include "SLevelOfDetailBranchNode.h"
+#include "Widgets/Text/SInlineEditableTextBlock.h"
+#include "SCommentBubble.h"
 #include "SlateOptMacros.h"
+#include "SGraphPin.h"
 #include "GraphEditorSettings.h"
 #include "PuzzleSequencer.h"
-#include "SCommentBubble.h"
-#include "Widgets/Text/SInlineEditableTextBlock.h"
+#include "AssetEditor/EdNode_PSENode.h"
+#include "AssetEditor/PSEDragConnection.h"
 
 #define LOCTEXT_NAMESPACE "EdNode_PuzzleSequencer"
 

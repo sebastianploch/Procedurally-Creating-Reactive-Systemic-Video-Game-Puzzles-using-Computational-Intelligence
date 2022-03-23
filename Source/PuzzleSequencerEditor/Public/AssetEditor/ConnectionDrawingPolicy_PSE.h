@@ -3,7 +3,6 @@
 #include "CoreMinimal.h"
 #include "ConnectionDrawingPolicy.h"
 
-
 class PUZZLESEQUENCEREDITOR_API FConnectionDrawingPolicy_PSE : public FConnectionDrawingPolicy
 {
 public:

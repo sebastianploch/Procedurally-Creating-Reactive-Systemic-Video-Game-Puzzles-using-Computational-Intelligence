@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include "Modules/ModuleManager.h"
 
-class PUZZLESEQUENCEREDITOR_API IPuzzleSequencerEditor : public IModuleInterface
+class IPuzzleSequencerEditor : public IModuleInterface
 {
 public:
 	FORCEINLINE static IPuzzleSequencerEditor& Get()

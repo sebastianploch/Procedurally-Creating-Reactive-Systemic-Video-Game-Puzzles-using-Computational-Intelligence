@@ -9,6 +9,7 @@
 class UEdNode_PSENode;
 class UEdNode_PSEEdge;
 
+#pragma region NewNode
 USTRUCT()
 struct PUZZLESEQUENCEREDITOR_API FAssetSchemaAction_PSE_NewNode : public FEdGraphSchemaAction
 {
@@ -25,7 +26,9 @@ public:
 	UPROPERTY()
 	UEdNode_PSENode* NodeTemplate{nullptr};
 };
+#pragma endregion NewNode
 
+#pragma region NewEdge
 USTRUCT()
 struct PUZZLESEQUENCEREDITOR_API FAssetSchemaAction_PSE_NewEdge : public FEdGraphSchemaAction
 {
@@ -42,6 +45,7 @@ public:
 	UPROPERTY()
 	UEdNode_PSEEdge* NodeTemplate{nullptr};
 };
+#pragma endregion NewEdge
 
 UCLASS(MinimalAPI)
 class UAssetGraphSchema_PSE : public UEdGraphSchema

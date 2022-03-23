@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "EdGraphUtilities.h"
+#include "EdGraph/EdGraphNode.h"
 
 class PUZZLESEQUENCEREDITOR_API FPSENodeFactory : public FGraphPanelNodeFactory
 {

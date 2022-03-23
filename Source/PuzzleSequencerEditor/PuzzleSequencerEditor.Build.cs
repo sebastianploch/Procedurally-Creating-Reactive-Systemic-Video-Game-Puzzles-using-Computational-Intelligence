@@ -11,6 +11,7 @@ public class PuzzleSequencerEditor : ModuleRules
             "Core",
             "CoreUObject",
             "Slate",
+            "Engine",
             "SlateCore",
             "UnrealEd",
             "GraphEditor",
@@ -20,7 +21,8 @@ public class PuzzleSequencerEditor : ModuleRules
             "KismetWidgets",
             "ApplicationCore",
             "EditorStyle",
-            "PropertyEditor"
+            "PropertyEditor",
+            "InputCore"
         });
     }
 }

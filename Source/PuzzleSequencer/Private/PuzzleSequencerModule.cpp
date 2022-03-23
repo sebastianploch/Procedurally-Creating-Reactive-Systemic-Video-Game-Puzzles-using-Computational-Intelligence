@@ -1,3 +1,17 @@
-#include "Modules/ModuleManager.h"
+#include "IPuzzleSequencer.h"
 
-IMPLEMENT_MODULE(FDefaultModuleImpl, PuzzleSequencer);
+class FPuzzleSequencerModule : public IPuzzleSequencer
+{
+	virtual void StartupModule() override;
+	virtual void ShutdownModule() override;
+};
+
+IMPLEMENT_MODULE(FPuzzleSequencerModule, PuzzleSequencer)
+
+void FPuzzleSequencerModule::StartupModule()
+{
+}
+
+void FPuzzleSequencerModule::ShutdownModule()
+{
+}

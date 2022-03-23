@@ -4,7 +4,7 @@
 #include <IAssetTools.h>
 #include <EdGraphUtilities.h>
 
-class PUZZLESEQUENCEREDITOR_API FPSEditor : public IPuzzleSequencerEditor
+class FPSEditor : public IPuzzleSequencerEditor
 {
 private:
 	virtual void StartupModule() override;

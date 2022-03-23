@@ -1,8 +1,8 @@
 ﻿#include "AssetEditor/PSEDragConnection.h"
-#include "AssetEditor/EdNode_PSENode.h"
 
 #include "SGraphPanel.h"
 #include "ScopedTransaction.h"
+#include "AssetEditor/EdNode_PSENode.h"
 #include "EdGraph/EdGraph.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Images/SImage.h"

@@ -1,6 +1,7 @@
 ﻿#include "PuzzleSequencerEditor/Public/AssetEditor/PSEStyle.h"
-
+#include "Styling/SlateTypes.h"
 #include "Styling/SlateStyleRegistry.h"
+#include "Misc/Paths.h"
 
 #define IMAGE_BRUSH( RelativePath, ... ) FSlateImageBrush( StyleSet->RootToContentDir( RelativePath, TEXT(".png") ), __VA_ARGS__ )
 #define BOX_BRUSH( RelativePath, ... ) FSlateBoxBrush( StyleSet->RootToContentDir( RelativePath, TEXT(".png") ), __VA_ARGS__ )
