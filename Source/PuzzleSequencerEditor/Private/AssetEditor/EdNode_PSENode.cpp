@@ -1,6 +1,5 @@
 ﻿#include "AssetEditor/EdNode_PSENode.h"
 #include "AssetEditor/EdGraph_PSE.h"
-#include "PuzzleSequencerNode.h"
 #include "Kismet2/Kismet2NameValidators.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 
@@ -14,6 +13,11 @@ UEdNode_PSENode::UEdNode_PSENode()
 void UEdNode_PSENode::SetNode(UPuzzleSequencerNode* InNode)
 {
 	Node = InNode;
+}
+
+UEdGraph_PSE* UEdNode_PSENode::GetEdGraph() const
+{
+	return Cast<UEdGraph_PSE>(GetGraph());
 }
 
 void UEdNode_PSENode::AllocateDefaultPins()

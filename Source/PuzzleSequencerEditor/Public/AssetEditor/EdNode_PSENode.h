@@ -2,10 +2,11 @@
 
 #include "CoreMinimal.h"
 #include "EdGraph/EdGraphNode.h"
+#include "PuzzleSequencerNode.h"
 #include "EdNode_PSENode.generated.h"
 
-class UPuzzleSequencerNode;
 class UEdNode_PSEEdge;
+class UEdGraph_PSE;
 class SEdNode_PSENode;
 
 UCLASS(MinimalAPI)
@@ -20,7 +21,7 @@ public:
 	UPuzzleSequencerNode* Node{nullptr};
 
 	void SetNode(UPuzzleSequencerNode* InNode);
-	// TODO: 	UEdGraph_GenericGraph* GetGenericGraphEdGraph();
+	UEdGraph_PSE* GetEdGraph() const;
 
 	SEdNode_PSENode* SEdNode{nullptr};
 	
