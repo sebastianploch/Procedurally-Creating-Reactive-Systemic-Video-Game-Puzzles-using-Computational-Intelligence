@@ -15,7 +15,7 @@ public:
 	UPuzzleSequencer();
 
 	UPROPERTY(EditDefaultsOnly, Category="PuzzleSequencer")
-	FString Name{};
+	FString Name{TEXT("Puzzle Sequencer Graph")};
 
 	UPROPERTY(EditDefaultsOnly, Category="PuzzleSequencer")
 	TSubclassOf<UPuzzleSequencerNode> NodeType{};
@@ -49,13 +49,13 @@ public:
 #pragma region Editor
 #if WITH_EDITORONLY_DATA
 	UPROPERTY()
-	class UEdGraph* EdGraph{nullptr};
+	class UEdGraph* EdGraph;
 
-	UPROPERTY(EditDefaultsOnly, Category="PuzzleSequencer_Editor")
-	bool bCanRenameNode{true};
+	UPROPERTY(EditDefaultsOnly, Category="PuzzleSequencer|Editor")
+	bool bCanRenameNode;
 
-	UPROPERTY(EditDefaultsOnly, Category="PuzzleSequencer_Editor")
-	bool bCanBeCyclical{true};
+	UPROPERTY(EditDefaultsOnly, Category="PuzzleSequencer|Editor")
+	bool bCanBeCyclical;
 #endif
 #pragma endregion  Editor
 };

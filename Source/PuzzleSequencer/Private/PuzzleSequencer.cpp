@@ -11,6 +11,7 @@ UPuzzleSequencer::UPuzzleSequencer()
 #if WITH_EDITORONLY_DATA
 	EdGraph = nullptr;
 	bCanRenameNode = true;
+	bCanBeCyclical = false;
 #endif
 }
 
