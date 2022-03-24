@@ -51,7 +51,10 @@ UPSEFactory::UPSEFactory()
 
 bool UPSEFactory::ConfigureProperties()
 {
-	PuzzleSequencerClass = nullptr;
+	return true;
+
+	// Uncomment to support derived class picking during asset creation
+	/*PuzzleSequencerClass = nullptr;
 
 	const FClassViewerModule& classViewer = FModuleManager::LoadModuleChecked<FClassViewerModule>("ClassViewer");
 
@@ -73,7 +76,7 @@ bool UPSEFactory::ConfigureProperties()
 		PuzzleSequencerClass = chosenClass;
 	}
 
-	return bPressedOk;
+	return bPressedOk;*/
 }
 
 UObject* UPSEFactory::FactoryCreateNew(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags, UObject* Context, FFeedbackContext* Warn)

@@ -12,11 +12,11 @@ class PUZZLESEQUENCEREDITOR_API UPSEFactory : public UFactory
 
 public:
 	UPSEFactory();
-	virtual ~UPSEFactory() override = default;
-
-	UPROPERTY(EditAnywhere, Category="DataAsset")
-	TSubclassOf<UPuzzleSequencer> PuzzleSequencerClass{};
-
+	
 	virtual bool ConfigureProperties() override;
 	virtual UObject* FactoryCreateNew(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags, UObject* Context, FFeedbackContext* Warn) override;
+
+public:
+	UPROPERTY(EditAnywhere, Category="DataAsset")
+	TSubclassOf<UPuzzleSequencer> PuzzleSequencerClass{UPuzzleSequencer::StaticClass()};
 };
