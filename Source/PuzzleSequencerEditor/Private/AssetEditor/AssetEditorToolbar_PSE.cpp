@@ -31,7 +31,7 @@ void FAssetEditorToolbar_PSE::FillPuzzleSequencerGraphToolbar(FToolBarBuilder& I
 		                                  NAME_None,
 		                                  LOCTEXT("GraphSettings_Label", "Graph Settings"),
 		                                  LOCTEXT("GraphSettings_ToolTip", "Show the Graph Settings"),
-		                                  FSlateIcon(FPSEStyle::GetStyleSetName(), "LevelEditor.GameSettings"));
+		                                  FSlateIcon(FEditorStyle::GetStyleSetName(), "LevelEditor.GameSettings"));
 	}
 	InToolBarBuilder.EndSection();
 }

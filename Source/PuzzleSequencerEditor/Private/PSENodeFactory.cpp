@@ -8,5 +8,13 @@
 
 TSharedPtr<SGraphNode> FPSENodeFactory::CreateNode(UEdGraphNode* Node) const
 {
+	if (UEdNode_PSENode* EdNode_GraphNode = Cast<UEdNode_PSENode>(Node))
+	{
+		return SNew(SEdNode_PSENode, EdNode_GraphNode);
+	}
+	else if (UEdNode_PSEEdge* EdNode_Edge = Cast<UEdNode_PSEEdge>(Node))
+	{
+		return SNew(SEdNode_PSEEdge, EdNode_Edge);
+	}
 	return nullptr;
 }
