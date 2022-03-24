@@ -73,33 +73,37 @@ void FAssetEditor_PSE::InitPuzzleSequencerAssetEditor(const EToolkitMode::Type I
 	const TSharedRef<FTabManager::FLayout> StandaloneDefaultLayout = FTabManager::NewLayout("Standalone_PuzzleSequencerEditor_Layout_v1")
 		->AddArea
 		(
-			FTabManager::NewPrimaryArea()->SetOrientation(Orient_Vertical)
-			                             ->Split
-			                             (
-				                             FTabManager::NewSplitter()->SetOrientation(Orient_Horizontal)->SetSizeCoefficient(0.9f)
-				                                                       ->Split
-				                                                       (
-					                                                       FTabManager::NewStack()
-					                                                       ->SetSizeCoefficient(0.65f)
-					                                                       ->AddTab(FPSEAssetEditorTabs::ViewportID, ETabState::OpenedTab)->SetHideTabWell(true)
-				                                                       )
-				                                                       ->Split
-				                                                       (
-					                                                       FTabManager::NewSplitter()->SetOrientation(Orient_Vertical)
-					                                                                                 ->Split
-					                                                                                 (
-						                                                                                 FTabManager::NewStack()
-						                                                                                 ->SetSizeCoefficient(0.7f)
-						                                                                                 ->AddTab(FPSEAssetEditorTabs::PuzzleSequencerPropertyID, ETabState::OpenedTab)->SetHideTabWell(true)
-					                                                                                 )
-					                                                                                 ->Split
-					                                                                                 (
-						                                                                                 FTabManager::NewStack()
-						                                                                                 ->SetSizeCoefficient(0.3f)
-						                                                                                 ->AddTab(FPSEAssetEditorTabs::PuzzleSequencerEditorSettingsID, ETabState::OpenedTab)
-					                                                                                 )
-				                                                       )
-			                             )
+			FTabManager::NewPrimaryArea()
+			->SetOrientation(Orient_Vertical)
+			->Split
+			(
+				FTabManager::NewSplitter()
+				->SetOrientation(Orient_Horizontal)
+				->SetSizeCoefficient(0.9f)
+				->Split
+				(
+					FTabManager::NewStack()
+					->SetSizeCoefficient(0.65f)
+					->AddTab(FPSEAssetEditorTabs::ViewportID, ETabState::OpenedTab)->SetHideTabWell(true)
+				)
+				->Split
+				(
+					FTabManager::NewSplitter()
+					->SetOrientation(Orient_Vertical)
+					->Split
+					(
+						FTabManager::NewStack()
+						->SetSizeCoefficient(0.7f)
+						->AddTab(FPSEAssetEditorTabs::PuzzleSequencerPropertyID, ETabState::OpenedTab)->SetHideTabWell(true)
+					)
+					->Split
+					(
+						FTabManager::NewStack()
+						->SetSizeCoefficient(0.3f)
+						->AddTab(FPSEAssetEditorTabs::PuzzleSequencerEditorSettingsID, ETabState::OpenedTab)
+					)
+				)
+			)
 		);
 
 	const bool bCreateDefaultStandaloneMenu = true;
