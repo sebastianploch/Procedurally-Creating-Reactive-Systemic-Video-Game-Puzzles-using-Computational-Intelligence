@@ -14,7 +14,7 @@ void FPSEditor::StartupModule()
 
 	IAssetTools& AssetTools = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools").Get();
 
-	PuzzleSequencerAssetCategoryBit = AssetTools.RegisterAdvancedAssetCategory(FName(TEXT("GenericGraph")), LOCTEXT("GenericGraphAssetCategory", "GenericGraph"));
+	PuzzleSequencerAssetCategoryBit = AssetTools.RegisterAdvancedAssetCategory(FName(TEXT("PuzzleSequencer")), LOCTEXT("PuzzleSequencerAssetCategory", "PuzzleSequencer"));
 
 	RegisterAssetTypeAction(AssetTools, MakeShareable(new FAssetTypeActions_PSE(PuzzleSequencerAssetCategoryBit)));
 }

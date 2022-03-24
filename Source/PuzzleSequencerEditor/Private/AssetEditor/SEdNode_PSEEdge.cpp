@@ -157,7 +157,7 @@ void SEdNode_PSEEdge::OnNameTextCommited(const FText& InText, ETextCommit::Type 
 
 	if (MyNode != nullptr && MyNode->Edge != nullptr)
 	{
-		const FScopedTransaction Transaction(LOCTEXT("GenericGraphEditorRenameEdge", "Generic Graph Editor: Rename Edge"));
+		const FScopedTransaction Transaction(LOCTEXT("PuzzleSequencerEditorRenameEdge", "Puzzle Sequencer Editor: Rename Edge"));
 		MyNode->Modify();
 		MyNode->Edge->SetNodeTitle(InText);
 		UpdateGraphNode();

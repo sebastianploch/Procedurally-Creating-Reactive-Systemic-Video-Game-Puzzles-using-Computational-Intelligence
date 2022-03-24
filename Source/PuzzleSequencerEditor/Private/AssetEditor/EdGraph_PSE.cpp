@@ -18,11 +18,11 @@ void UEdGraph_PSE::RebuildGraph()
 				continue;
 			}
 
-			UPuzzleSequencerNode* GenericGraphNode = EdNode->Node;
+			UPuzzleSequencerNode* node = EdNode->Node;
 
-			NodeMap.Add(GenericGraphNode, EdNode);
+			NodeMap.Add(node, EdNode);
 
-			Graph->AllNodes.Add(GenericGraphNode);
+			Graph->AllNodes.Add(node);
 
 			for (int PinIdx = 0; PinIdx < EdNode->Pins.Num(); ++PinIdx)
 			{
@@ -51,13 +51,12 @@ void UEdGraph_PSE::RebuildGraph()
 
 					if (ChildNode != nullptr)
 					{
-						GenericGraphNode->ChildrenNodes.Add(ChildNode);
+						node->ChildrenNodes.Add(ChildNode);
 
-						ChildNode->ParentNodes.Add(GenericGraphNode);
+						ChildNode->ParentNodes.Add(node);
 					}
 					else
 					{
-						//LOG_ERROR(TEXT("UEdGraph_GenericGraph::RebuildGenericGraph can't find child node"));
 					}
 				}
 			}
@@ -70,7 +69,6 @@ void UEdGraph_PSE::RebuildGraph()
 
 			if (StartNode == nullptr || EndNode == nullptr || Edge == nullptr)
 			{
-				//LOG_ERROR(TEXT("UEdGraph_GenericGraph::RebuildGenericGraph add edge failed."));
 				continue;
 			}
 
@@ -144,12 +142,12 @@ void UEdGraph_PSE::Clear()
 	{
 		if (UEdNode_PSENode* EdNode = Cast<UEdNode_PSENode>(Nodes[i]))
 		{
-			UPuzzleSequencerNode* GenericGraphNode = EdNode->Node;
-			if (GenericGraphNode)
+			UPuzzleSequencerNode* node = EdNode->Node;
+			if (node)
 			{
-				GenericGraphNode->ParentNodes.Reset();
-				GenericGraphNode->ChildrenNodes.Reset();
-				GenericGraphNode->Edges.Reset();
+				node->ParentNodes.Reset();
+				node->ChildrenNodes.Reset();
+				node->Edges.Reset();
 			}
 		}
 	}

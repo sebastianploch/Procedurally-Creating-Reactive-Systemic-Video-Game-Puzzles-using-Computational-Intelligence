@@ -22,16 +22,16 @@ const FName PuzzleSequencerEditorAppName = FName(TEXT("PuzzleSequencerEditorApp"
 struct FPSEAssetEditorTabs
 {
 	// Tab identifiers
-	static const FName GenericGraphPropertyID;
+	static const FName PuzzleSequencerPropertyID;
 	static const FName ViewportID;
-	static const FName GenericGraphEditorSettingsID;
+	static const FName PuzzleSequencerEditorSettingsID;
 };
 
 //////////////////////////////////////////////////////////////////////////
 
-const FName FPSEAssetEditorTabs::GenericGraphPropertyID(TEXT("PuzzleSequencerProperty"));
+const FName FPSEAssetEditorTabs::PuzzleSequencerPropertyID(TEXT("PuzzleSequencerProperty"));
 const FName FPSEAssetEditorTabs::ViewportID(TEXT("Viewport"));
-const FName FPSEAssetEditorTabs::GenericGraphEditorSettingsID(TEXT("PuzzleSequencerEditorSettings"));
+const FName FPSEAssetEditorTabs::PuzzleSequencerEditorSettingsID(TEXT("PuzzleSequencerEditorSettings"));
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -95,13 +95,13 @@ void FAssetEditor_PSE::InitPuzzleSequencerAssetEditor(const EToolkitMode::Type I
 					                                                                                 (
 						                                                                                 FTabManager::NewStack()
 						                                                                                 ->SetSizeCoefficient(0.7f)
-						                                                                                 ->AddTab(FPSEAssetEditorTabs::GenericGraphPropertyID, ETabState::OpenedTab)->SetHideTabWell(true)
+						                                                                                 ->AddTab(FPSEAssetEditorTabs::PuzzleSequencerPropertyID, ETabState::OpenedTab)->SetHideTabWell(true)
 					                                                                                 )
 					                                                                                 ->Split
 					                                                                                 (
 						                                                                                 FTabManager::NewStack()
 						                                                                                 ->SetSizeCoefficient(0.3f)
-						                                                                                 ->AddTab(FPSEAssetEditorTabs::GenericGraphEditorSettingsID, ETabState::OpenedTab)
+						                                                                                 ->AddTab(FPSEAssetEditorTabs::PuzzleSequencerEditorSettingsID, ETabState::OpenedTab)
 					                                                                                 )
 				                                                       )
 			                             )
@@ -126,12 +126,12 @@ void FAssetEditor_PSE::RegisterTabSpawners(const TSharedRef<FTabManager>& InTabM
 	            .SetGroup(WorkspaceMenuCategoryRef)
 	            .SetIcon(FSlateIcon(FEditorStyle::GetStyleSetName(), "GraphEditor.EventGraph_16x"));
 
-	InTabManager->RegisterTabSpawner(FPSEAssetEditorTabs::GenericGraphPropertyID, FOnSpawnTab::CreateSP(this, &FAssetEditor_PSE::SpawnTab_Details))
+	InTabManager->RegisterTabSpawner(FPSEAssetEditorTabs::PuzzleSequencerPropertyID, FOnSpawnTab::CreateSP(this, &FAssetEditor_PSE::SpawnTab_Details))
 	            .SetDisplayName(LOCTEXT("DetailsTab", "Property"))
 	            .SetGroup(WorkspaceMenuCategoryRef)
 	            .SetIcon(FSlateIcon(FEditorStyle::GetStyleSetName(), "LevelEditor.Tabs.Details"));
 
-	InTabManager->RegisterTabSpawner(FPSEAssetEditorTabs::GenericGraphEditorSettingsID, FOnSpawnTab::CreateSP(this, &FAssetEditor_PSE::SpawnTab_EditorSettings))
+	InTabManager->RegisterTabSpawner(FPSEAssetEditorTabs::PuzzleSequencerEditorSettingsID, FOnSpawnTab::CreateSP(this, &FAssetEditor_PSE::SpawnTab_EditorSettings))
 	            .SetDisplayName(LOCTEXT("EditorSettingsTab", "Puzzle Sequencer Editor Setttings"))
 	            .SetGroup(WorkspaceMenuCategoryRef)
 	            .SetIcon(FSlateIcon(FEditorStyle::GetStyleSetName(), "LevelEditor.Tabs.Details"));
@@ -142,8 +142,8 @@ void FAssetEditor_PSE::UnregisterTabSpawners(const TSharedRef<FTabManager>& InTa
 	FAssetEditorToolkit::UnregisterTabSpawners(InTabManager);
 
 	InTabManager->UnregisterTabSpawner(FPSEAssetEditorTabs::ViewportID);
-	InTabManager->UnregisterTabSpawner(FPSEAssetEditorTabs::GenericGraphPropertyID);
-	InTabManager->UnregisterTabSpawner(FPSEAssetEditorTabs::GenericGraphEditorSettingsID);
+	InTabManager->UnregisterTabSpawner(FPSEAssetEditorTabs::PuzzleSequencerPropertyID);
+	InTabManager->UnregisterTabSpawner(FPSEAssetEditorTabs::PuzzleSequencerEditorSettingsID);
 }
 
 FName FAssetEditor_PSE::GetToolkitFName() const
@@ -190,7 +190,7 @@ void FAssetEditor_PSE::SaveAsset_Execute()
 {
 	if (EditingGraph != nullptr)
 	{
-		RebuildGenericGraph();
+		RebuildGraph();
 	}
 
 	FAssetEditorToolkit::SaveAsset_Execute();
@@ -233,7 +233,7 @@ TSharedRef<SDockTab> FAssetEditor_PSE::SpawnTab_Viewport(const FSpawnTabArgs& Ar
 
 TSharedRef<SDockTab> FAssetEditor_PSE::SpawnTab_Details(const FSpawnTabArgs& Args)
 {
-	check(Args.GetTabId() == FPSEAssetEditorTabs::GenericGraphPropertyID);
+	check(Args.GetTabId() == FPSEAssetEditorTabs::PuzzleSequencerPropertyID);
 
 	return SNew(SDockTab)
 		.Icon(FEditorStyle::GetBrush("LevelEditor.Tabs.Details"))
@@ -245,11 +245,11 @@ TSharedRef<SDockTab> FAssetEditor_PSE::SpawnTab_Details(const FSpawnTabArgs& Arg
 
 TSharedRef<SDockTab> FAssetEditor_PSE::SpawnTab_EditorSettings(const FSpawnTabArgs& Args)
 {
-	check(Args.GetTabId() == FPSEAssetEditorTabs::GenericGraphEditorSettingsID);
+	check(Args.GetTabId() == FPSEAssetEditorTabs::PuzzleSequencerEditorSettingsID);
 
 	return SNew(SDockTab)
 		.Icon(FEditorStyle::GetBrush("LevelEditor.Tabs.Details"))
-		.Label(LOCTEXT("EditorSettings_Title", "Generic Graph Editor Setttings"))
+		.Label(LOCTEXT("EditorSettings_Title", "Puzzle Sequencer Editor Setttings"))
 	[
 		EditorSettingsWidget.ToSharedRef()
 	];
@@ -275,7 +275,7 @@ void FAssetEditor_PSE::CreateInternalWidgets()
 TSharedRef<SGraphEditor> FAssetEditor_PSE::CreateViewportWidget()
 {
 	FGraphAppearanceInfo AppearanceInfo;
-	AppearanceInfo.CornerText = LOCTEXT("AppearanceCornerText_GenericGraph", "Puzzle Sequencer");
+	AppearanceInfo.CornerText = LOCTEXT("AppearanceCornerText_PuzzleSequencer", "Puzzle Sequencer");
 
 	CreateCommandList();
 
@@ -384,7 +384,7 @@ FGraphPanelSelectionSet FAssetEditor_PSE::GetSelectedNodes() const
 	return CurrentSelection;
 }
 
-void FAssetEditor_PSE::RebuildGenericGraph()
+void FAssetEditor_PSE::RebuildGraph()
 {
 	if (EditingGraph == nullptr)
 	{
@@ -740,7 +740,7 @@ void FAssetEditor_PSE::OnFinishedChangingProperties(const FPropertyChangedEvent&
 
 void FAssetEditor_PSE::OnPackageSaved(const FString& PackageFileName, UObject* Outer)
 {
-	RebuildGenericGraph();
+	RebuildGraph();
 }
 
 #undef LOCTEXT_NAMESPACE

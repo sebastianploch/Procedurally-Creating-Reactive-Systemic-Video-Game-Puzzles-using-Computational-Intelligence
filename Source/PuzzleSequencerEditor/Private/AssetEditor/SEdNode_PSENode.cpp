@@ -284,10 +284,10 @@ bool SEdNode_PSENode::IsNameReadOnly() const
 	UEdNode_PSENode* EdNode_Node = Cast<UEdNode_PSENode>(GraphNode);
 	check(EdNode_Node != nullptr);
 
-	UPuzzleSequencer* GenericGraph = EdNode_Node->Node->Graph;
-	check(GenericGraph != nullptr);
+	UPuzzleSequencer* graph = EdNode_Node->Node->Graph;
+	check(graph != nullptr);
 
-	return (!GenericGraph->bCanRenameNode || !EdNode_Node->Node->IsNameEditable()) || SGraphNode::IsNameReadOnly();
+	return (!graph->bCanRenameNode || !EdNode_Node->Node->IsNameEditable()) || SGraphNode::IsNameReadOnly();
 }
 
 END_SLATE_FUNCTION_BUILD_OPTIMIZATION

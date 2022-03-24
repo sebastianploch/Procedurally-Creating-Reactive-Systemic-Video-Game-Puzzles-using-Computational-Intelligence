@@ -51,7 +51,7 @@ protected:
 
 	FGraphPanelSelectionSet GetSelectedNodes() const;
 
-	void RebuildGenericGraph();
+	void RebuildGraph();
 
 	// Delegates for graph editor commands
 	void SelectAllNodes();
