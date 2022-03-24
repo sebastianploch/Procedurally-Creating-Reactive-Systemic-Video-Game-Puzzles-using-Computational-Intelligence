@@ -6,6 +6,7 @@
 
 class UPuzzleSequencer;
 class UPuzzleSequencerEdge;
+class APuzzleActor;
 
 UENUM(BlueprintType)
 enum class EPSENodeLimit : uint8
@@ -55,6 +56,9 @@ public:
 	UPROPERTY(VisibleDefaultsOnly, Category="PuzzleSequencerNode")
 	UPuzzleSequencer* Graph{nullptr};
 
+	UPROPERTY(EditDefaultsOnly, Category="PuzzleSequencerNode")
+	APuzzleActor* PuzzleActor{nullptr};
+	
 	UPROPERTY(BlueprintReadOnly, Category="PuzzleSequencerNode")
 	TArray<UPuzzleSequencerNode*> ParentNodes{};
 
@@ -67,29 +71,29 @@ public:
 #pragma region Editor
 #if WITH_EDITORONLY_DATA
 public:
-	UPROPERTY(EditDefaultsOnly, Category = "PuzzleSequencerNode")
-	FText NodeTitle{FText::FromString(TEXT("Puzzle Sequencer Node"))};
+	UPROPERTY(EditDefaultsOnly, Category = "PuzzleSequencerNode|Editor")
+	FText NodeTitle;
 
-	UPROPERTY(VisibleDefaultsOnly, Category = "PuzzleSequencerNode")
+	UPROPERTY(VisibleDefaultsOnly, Category = "PuzzleSequencerNode|Editor")
 	TSubclassOf<UPuzzleSequencer> CompatibleGraphType;
 
-	UPROPERTY(EditDefaultsOnly, Category = "PuzzleSequencerNode")
+	UPROPERTY(EditDefaultsOnly, Category = "PuzzleSequencerNode|Editor")
 	FLinearColor BackgroundColor;
 
-	UPROPERTY(EditDefaultsOnly, Category = "PuzzleSequencerNode")
+	UPROPERTY(EditDefaultsOnly, Category = "PuzzleSequencerNode|Editor")
 	FText ContextMenuName;
 
-	UPROPERTY(EditDefaultsOnly, Category = "PuzzleSequencerNode")
-	EPSENodeLimit ParentLimitType{EPSENodeLimit::Limited};
+	UPROPERTY(EditDefaultsOnly, Category = "PuzzleSequencerNode|Editor")
+	EPSENodeLimit ParentLimitType;
 
-	UPROPERTY(EditDefaultsOnly, Category = "PuzzleSequencerNode", meta = (ClampMin = "0", EditCondition = "ParentLimitType == EPSENodeLimit::Limited", EditConditionHides))
-	int32 ParentLimit{1};
+	UPROPERTY(EditDefaultsOnly, Category = "PuzzleSequencerNode|Editor", meta = (ClampMin = "0", EditCondition = "ParentLimitType == EPSENodeLimit::Limited", EditConditionHides))
+	int32 ParentLimit;
 
-	UPROPERTY(EditDefaultsOnly, Category = "PuzzleSequencerNode")
-	EPSENodeLimit ChildrenLimitType{EPSENodeLimit::Limited};
+	UPROPERTY(EditDefaultsOnly, Category = "PuzzleSequencerNode|Editor")
+	EPSENodeLimit ChildrenLimitType;
 
-	UPROPERTY(EditDefaultsOnly, Category = "PuzzleSequencerNode", meta = (ClampMin = "0", EditCondition = "ChildrenLimitType == EPSENodeLimit::Limited", EditConditionHides))
-	int32 ChildrenLimit{1};
+	UPROPERTY(EditDefaultsOnly, Category = "PuzzleSequencerNode|Editor", meta = (ClampMin = "0", EditCondition = "ChildrenLimitType == EPSENodeLimit::Limited", EditConditionHides))
+	int32 ChildrenLimit;
 #endif
 #pragma endregion Editor
 };

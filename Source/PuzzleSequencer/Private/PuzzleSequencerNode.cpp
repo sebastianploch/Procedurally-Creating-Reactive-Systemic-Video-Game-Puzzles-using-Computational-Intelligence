@@ -1,14 +1,20 @@
 ﻿#include "PuzzleSequencerNode.h"
 #include "PuzzleSequencer.h"
+#include "PuzzleActor.h"
 
 #define LOCTEXT_NAMESPACE "PuzzleSequencerNode"
 
 UPuzzleSequencerNode::UPuzzleSequencerNode()
 {
 #if WITH_EDITORONLY_DATA
+	NodeTitle = FText::FromString(TEXT("Puzzle Sequencer Node"));
 	CompatibleGraphType = UPuzzleSequencer::StaticClass();
-
 	BackgroundColor = FLinearColor::Black;
+	ContextMenuName = FText::FromString(TEXT("Puzzle Sequencer Node"));
+	ParentLimitType = EPSENodeLimit::Limited;
+	ParentLimit = 1;
+	ChildrenLimitType = EPSENodeLimit::Limited;
+	ChildrenLimit = 1;
 #endif
 }
 
