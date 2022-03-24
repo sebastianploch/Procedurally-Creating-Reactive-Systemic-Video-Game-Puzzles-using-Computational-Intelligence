@@ -16,7 +16,7 @@ FText FAssetTypeActions_PSE::GetName() const
 
 FColor FAssetTypeActions_PSE::GetTypeColor() const
 {
-	return FColor(129, 196, 115);
+	return {129, 196, 115};
 }
 
 UClass* FAssetTypeActions_PSE::GetSupportedClass() const
@@ -31,8 +31,8 @@ void FAssetTypeActions_PSE::OpenAssetEditor(const TArray<UObject*>& InObjects, T
 	{
 		if (UPuzzleSequencer* graph = Cast<UPuzzleSequencer>(object))
 		{
-			// TODO: Finish this duh
-			//TShaderRef<FAssetEditor_PSE> newGraphEditor(new FAssetEditor_PSE());
+			const TSharedRef<FAssetEditor_PSE> graphEditor(new FAssetEditor_PSE());
+			graphEditor->InitPuzzleSequencerAssetEditor(mode, EditWithinLevelEditor, graph);
 		}
 	}
 }

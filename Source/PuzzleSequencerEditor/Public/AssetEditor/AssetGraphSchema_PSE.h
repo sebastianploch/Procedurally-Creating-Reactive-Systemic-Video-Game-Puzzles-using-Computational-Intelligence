@@ -79,5 +79,5 @@ public:
 	virtual void ForceVisualizationCacheClear() const override;
 
 private:
-	inline static int32 CurrentCacheRefreshID{};
+	inline static int32 CurrentCacheRefreshID{0};
 };

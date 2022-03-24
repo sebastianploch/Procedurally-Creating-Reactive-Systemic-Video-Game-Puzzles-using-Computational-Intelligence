@@ -8,7 +8,7 @@ class UPuzzleSequencer;
 class UPuzzleSequencerEdge;
 
 UENUM(BlueprintType)
-enum class ENodeLimit : uint8
+enum class EPSENodeLimit : uint8
 {
 	Unlimited,
 	Limited
@@ -21,19 +21,6 @@ class PUZZLESEQUENCER_API UPuzzleSequencerNode : public UObject
 
 public:
 	UPuzzleSequencerNode();
-	virtual ~UPuzzleSequencerNode() override = default;
-
-	UPROPERTY(VisibleDefaultsOnly, Category="PuzzleSequencerNode")
-	UPuzzleSequencer* Graph{nullptr};
-
-	UPROPERTY(BlueprintReadOnly, Category="PuzzleSequencerNode")
-	TArray<UPuzzleSequencerNode*> ParentNodes{};
-
-	UPROPERTY(BlueprintReadOnly, Category="PuzzleSequencerNode")
-	TArray<UPuzzleSequencerNode*> ChildrenNodes{};
-
-	UPROPERTY(BlueprintReadOnly, Category="PuzzleSequencerNode")
-	TMap<UPuzzleSequencerNode*, UPuzzleSequencerEdge*> Edges{};
 
 	UFUNCTION(BlueprintCallable, Category="PuzzleSequencerNode")
 	virtual UPuzzleSequencerEdge* GetEdge(UPuzzleSequencerNode* InChildNode);
@@ -48,8 +35,38 @@ public:
 	FText GetDescription() const;
 	virtual FText GetDescription_Implementation() const;
 
+#if WITH_EDITOR
+public:
+	virtual bool IsNameEditable() const;
+
+	virtual FLinearColor GetBackgroundColor() const;
+
+	virtual FText GetNodeTitle() const;
+
+	virtual void SetNodeTitle(const FText& NewTitle);
+
+	virtual bool CanCreateConnection(UPuzzleSequencerNode* Other, FText& ErrorMessage);
+
+	virtual bool CanCreateConnectionTo(UPuzzleSequencerNode* Other, int32 NumberOfChildrenNodes, FText& ErrorMessage);
+	virtual bool CanCreateConnectionFrom(UPuzzleSequencerNode* Other, int32 NumberOfParentNodes, FText& ErrorMessage);
+#endif
+
+public:
+	UPROPERTY(VisibleDefaultsOnly, Category="PuzzleSequencerNode")
+	UPuzzleSequencer* Graph{nullptr};
+
+	UPROPERTY(BlueprintReadOnly, Category="PuzzleSequencerNode")
+	TArray<UPuzzleSequencerNode*> ParentNodes{};
+
+	UPROPERTY(BlueprintReadOnly, Category="PuzzleSequencerNode")
+	TArray<UPuzzleSequencerNode*> ChildrenNodes{};
+
+	UPROPERTY(BlueprintReadOnly, Category="PuzzleSequencerNode")
+	TMap<UPuzzleSequencerNode*, UPuzzleSequencerEdge*> Edges{};
+
 #pragma region Editor
 #if WITH_EDITORONLY_DATA
+public:
 	UPROPERTY(EditDefaultsOnly, Category = "PuzzleSequencerNode")
 	FText NodeTitle;
 
@@ -63,32 +80,16 @@ public:
 	FText ContextMenuName;
 
 	UPROPERTY(EditDefaultsOnly, Category = "PuzzleSequencerNode")
-	ENodeLimit ParentLimitType;
+	EPSENodeLimit ParentLimitType;
 
-	UPROPERTY(EditDefaultsOnly, Category = "PuzzleSequencerNode", meta = (ClampMin = "0", EditCondition = "ParentLimitType == ENodeLimit::Limited", EditConditionHides))
+	UPROPERTY(EditDefaultsOnly, Category = "PuzzleSequencerNode", meta = (ClampMin = "0", EditCondition = "ParentLimitType == EPSENodeLimit::Limited", EditConditionHides))
 	int32 ParentLimit;
 
 	UPROPERTY(EditDefaultsOnly, Category = "PuzzleSequencerNode")
-	ENodeLimit ChildrenLimitType;
+	EPSENodeLimit ChildrenLimitType;
 
-	UPROPERTY(EditDefaultsOnly, Category = "PuzzleSequencerNode", meta = (ClampMin = "0", EditCondition = "ChildrenLimitType == ENodeLimit::Limited", EditConditionHides))
+	UPROPERTY(EditDefaultsOnly, Category = "PuzzleSequencerNode", meta = (ClampMin = "0", EditCondition = "ChildrenLimitType == EPSENodeLimit::Limited", EditConditionHides))
 	int32 ChildrenLimit;
-
-#endif
-
-#if WITH_EDITOR
-	virtual bool IsNameEditable() const;
-
-	virtual FLinearColor GetBackgroundColor() const;
-
-	virtual FText GetNodeTitle() const;
-
-	virtual void SetNodeTitle(const FText& NewTitle);
-
-	virtual bool CanCreateConnection(UPuzzleSequencerNode* Other, FText& ErrorMessage);
-
-	virtual bool CanCreateConnectionTo(UPuzzleSequencerNode* Other, int32 NumberOfChildrenNodes, FText& ErrorMessage);
-	virtual bool CanCreateConnectionFrom(UPuzzleSequencerNode* Other, int32 NumberOfParentNodes, FText& ErrorMessage);
 #endif
 #pragma endregion Editor
 };

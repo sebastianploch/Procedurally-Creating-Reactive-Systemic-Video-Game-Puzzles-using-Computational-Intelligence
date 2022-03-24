@@ -25,7 +25,16 @@ public:
 	UPuzzleSequencer* GetGraph() const;
 
 #pragma region Editor
+#if WITH_EDITOR
+public:
+	virtual FText GetNodeTitle() const { return NodeTitle; }
+	FLinearColor GetEdgeColour() const { return EdgeColour; }
+
+	virtual void SetNodeTitle(const FText& InNewTitle);
+#endif
+
 #if WITH_EDITORONLY_DATA
+public:
 	UPROPERTY(EditDefaultsOnly, Category="PuzzleSequencerNode_Editor")
 	bool bShouldDrawTitle{false};
 
@@ -34,13 +43,6 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category="PuzzleSequencerNode_Editor")
 	FLinearColor EdgeColour{0.9f, 0.9f, 0.9f, 1.f};
-#endif
-
-#if WITH_EDITOR
-	virtual FText GetNodeTitle() const { return NodeTitle; }
-	FLinearColor GetEdgeColour() const { return EdgeColour; }
-
-	virtual void SetNodeTitle(const FText& InNewTitle);
 #endif
 #pragma endregion Editor
 };

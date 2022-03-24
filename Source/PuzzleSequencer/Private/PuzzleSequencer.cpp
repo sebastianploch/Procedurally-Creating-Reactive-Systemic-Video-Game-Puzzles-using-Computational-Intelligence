@@ -28,8 +28,6 @@ void UPuzzleSequencer::Print(bool InToConsole, bool InToScreen)
 			check(node != nullptr)
 
 			const FString message = FString::Printf(TEXT("%s, Level %d"), *node->GetDescription().ToString(), level);
-			//if (InToConsole)
-
 			if (InToScreen && GEngine)
 			{
 				GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Blue, message);

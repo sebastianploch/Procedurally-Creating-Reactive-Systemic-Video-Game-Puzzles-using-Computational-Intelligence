@@ -78,7 +78,7 @@ bool UPSEFactory::ConfigureProperties()
 
 UObject* UPSEFactory::FactoryCreateNew(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags, UObject* Context, FFeedbackContext* Warn)
 {
-	if (!IsValid(PuzzleSequencerClass))
+	if (PuzzleSequencerClass)
 	{
 		return NewObject<UPuzzleSequencer>(InParent, PuzzleSequencerClass, InName, Flags | RF_Transactional);
 	}

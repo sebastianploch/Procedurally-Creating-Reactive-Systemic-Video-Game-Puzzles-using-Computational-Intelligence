@@ -59,7 +59,7 @@ bool UPuzzleSequencerNode::CanCreateConnection(UPuzzleSequencerNode* Other, FTex
 
 bool UPuzzleSequencerNode::CanCreateConnectionTo(UPuzzleSequencerNode* Other, int32 NumberOfChildrenNodes, FText& ErrorMessage)
 {
-	if (ParentLimitType == ENodeLimit::Limited && NumberOfChildrenNodes >= ParentLimit)
+	if (ParentLimitType == EPSENodeLimit::Limited && NumberOfChildrenNodes >= ParentLimit)
 	{
 		ErrorMessage = FText::FromString("Children limit exceeded");
 		return false;
@@ -70,7 +70,7 @@ bool UPuzzleSequencerNode::CanCreateConnectionTo(UPuzzleSequencerNode* Other, in
 
 bool UPuzzleSequencerNode::CanCreateConnectionFrom(UPuzzleSequencerNode* Other, int32 NumberOfParentNodes, FText& ErrorMessage)
 {
-	if (ParentLimitType == ENodeLimit::Limited && NumberOfParentNodes >= ParentLimit)
+	if (ParentLimitType == EPSENodeLimit::Limited && NumberOfParentNodes >= ParentLimit)
 	{
 		ErrorMessage = FText::FromString("Parent limit exceeded");
 		return false;

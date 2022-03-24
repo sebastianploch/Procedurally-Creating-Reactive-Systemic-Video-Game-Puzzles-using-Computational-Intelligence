@@ -32,6 +32,8 @@ public:
 
 	USettings_PSE* GetSettings() const;
 
+	virtual FString GetReferencerName() const override;
+
 protected:
 	TSharedRef<SDockTab> SpawnTab_Viewport(const FSpawnTabArgs& Args);
 	TSharedRef<SDockTab> SpawnTab_Details(const FSpawnTabArgs& Args);
@@ -83,7 +85,7 @@ protected:
 
 	void OnFinishedChangingProperties(const FPropertyChangedEvent& PropertyChangedEvent);
 
-	void OnPackageSaved(const FString& PackageFileName, UObject* Outer);
+	void OnPackageSavedWithContext(const FString& InName, UPackage* InPackage, FObjectPostSaveContext InContext);
 
 protected:
 	USettings_PSE* EditorSettings{nullptr};

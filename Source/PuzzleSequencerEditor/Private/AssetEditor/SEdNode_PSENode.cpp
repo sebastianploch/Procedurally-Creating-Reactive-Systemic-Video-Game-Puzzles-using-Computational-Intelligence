@@ -53,7 +53,7 @@ protected:
 
 	const FSlateBrush* GetPinBorder() const
 	{
-		return FEditorStyle::GetBrush(TEXT("PuzzleSequencer.StateNode.Body"));
+		return FEditorStyle::GetBrush(TEXT("Graph.StateNode.Body"));
 	}
 
 	virtual TSharedRef<FDragDropOperation> SpawnPinDragEvent(const TSharedRef<SGraphPanel>& InGraphPanel, const TArray<TSharedRef<SGraphPin>>& InStartingPins) override

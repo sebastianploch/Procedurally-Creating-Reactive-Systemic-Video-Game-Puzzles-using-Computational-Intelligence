@@ -39,7 +39,7 @@ void FConnectionDrawingPolicy_PSE::DrawSplineWithArrow(const FGeometry& StartGeo
 	// Get a reasonable seed point (halfway between the boxes)
 	const FVector2D StartCenter = FGeometryHelper::CenterOf(StartGeom);
 	const FVector2D EndCenter = FGeometryHelper::CenterOf(EndGeom);
-	const FVector2D SeedPoint = (StartCenter + EndCenter) * 0.5f;
+	const FVector2D SeedPoint = (StartCenter + EndCenter) * 0.5;
 
 	// Find the (approximate) closest points between the two boxes
 	const FVector2D StartAnchorPoint = FGeometryHelper::FindClosestPointOnGeom(StartGeom, SeedPoint);

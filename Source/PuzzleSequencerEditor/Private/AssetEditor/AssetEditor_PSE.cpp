@@ -14,6 +14,7 @@
 #include "EdGraphUtilities.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
+#include "UObject/ObjectSaveContext.h"
 
 #define LOCTEXT_NAMESPACE "AssetEditor_PuzzleSequencer"
 
@@ -38,12 +39,12 @@ const FName FPSEAssetEditorTabs::PuzzleSequencerEditorSettingsID(TEXT("PuzzleSeq
 FAssetEditor_PSE::FAssetEditor_PSE()
 {
 	EditorSettings = NewObject<USettings_PSE>(USettings_PSE::StaticClass());
-	OnPackageSavedDelegateHandle = UPackage::PackageSavedEvent.AddRaw(this, &FAssetEditor_PSE::OnPackageSaved);
+	OnPackageSavedDelegateHandle = UPackage::PackageSavedWithContextEvent.AddRaw(this, &FAssetEditor_PSE::OnPackageSavedWithContext);
 }
 
 FAssetEditor_PSE::~FAssetEditor_PSE()
 {
-	UPackage::PackageSavedEvent.Remove(OnPackageSavedDelegateHandle);
+	UPackage::PackageSavedWithContextEvent.Remove(OnPackageSavedDelegateHandle);
 }
 
 void FAssetEditor_PSE::InitPuzzleSequencerAssetEditor(const EToolkitMode::Type InMode, const TSharedPtr<IToolkitHost>& InInitToolkitHost, UPuzzleSequencer* InGraph)
@@ -77,7 +78,7 @@ void FAssetEditor_PSE::InitPuzzleSequencerAssetEditor(const EToolkitMode::Type I
 			                             (
 				                             FTabManager::NewStack()
 				                             ->SetSizeCoefficient(0.1f)
-				                             ->AddTab(GetToolbarTabId(), ETabState::OpenedTab)->SetHideTabWell(true)
+				                             //				                             ->AddTab(GetToolbarTabId(), ETabState::OpenedTab)->SetHideTabWell(true)
 			                             )
 			                             ->Split
 			                             (
@@ -216,6 +217,11 @@ USettings_PSE* FAssetEditor_PSE::GetSettings() const
 	return EditorSettings;
 }
 
+FString FAssetEditor_PSE::GetReferencerName() const
+{
+	return TEXT("AssetEditor_PSE");
+}
+
 TSharedRef<SDockTab> FAssetEditor_PSE::SpawnTab_Viewport(const FSpawnTabArgs& Args)
 {
 	check(Args.GetTabId() == FPSEAssetEditorTabs::ViewportID);
@@ -236,7 +242,6 @@ TSharedRef<SDockTab> FAssetEditor_PSE::SpawnTab_Details(const FSpawnTabArgs& Arg
 	check(Args.GetTabId() == FPSEAssetEditorTabs::PuzzleSequencerPropertyID);
 
 	return SNew(SDockTab)
-		.Icon(FEditorStyle::GetBrush("LevelEditor.Tabs.Details"))
 		.Label(LOCTEXT("Details_Title", "Property"))
 	[
 		PropertyWidget.ToSharedRef()
@@ -248,7 +253,6 @@ TSharedRef<SDockTab> FAssetEditor_PSE::SpawnTab_EditorSettings(const FSpawnTabAr
 	check(Args.GetTabId() == FPSEAssetEditorTabs::PuzzleSequencerEditorSettingsID);
 
 	return SNew(SDockTab)
-		.Icon(FEditorStyle::GetBrush("LevelEditor.Tabs.Details"))
 		.Label(LOCTEXT("EditorSettings_Title", "Puzzle Sequencer Editor Setttings"))
 	[
 		EditorSettingsWidget.ToSharedRef()
@@ -738,7 +742,7 @@ void FAssetEditor_PSE::OnFinishedChangingProperties(const FPropertyChangedEvent&
 	EditingGraph->EdGraph->GetSchema()->ForceVisualizationCacheClear();
 }
 
-void FAssetEditor_PSE::OnPackageSaved(const FString& PackageFileName, UObject* Outer)
+void FAssetEditor_PSE::OnPackageSavedWithContext(const FString& InName, UPackage* InPackage, FObjectPostSaveContext InContext)
 {
 	RebuildGraph();
 }

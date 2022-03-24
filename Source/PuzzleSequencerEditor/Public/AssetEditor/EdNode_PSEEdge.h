@@ -15,7 +15,6 @@ class UEdNode_PSEEdge : public UEdGraphNode
 
 public:
 	UEdNode_PSEEdge();
-	virtual ~UEdNode_PSEEdge() override = default;
 
 	UPROPERTY()
 	class UEdGraph* Graph{nullptr};
