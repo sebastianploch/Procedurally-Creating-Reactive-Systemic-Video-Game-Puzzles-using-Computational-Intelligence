@@ -68,7 +68,7 @@ public:
 #if WITH_EDITORONLY_DATA
 public:
 	UPROPERTY(EditDefaultsOnly, Category = "PuzzleSequencerNode")
-	FText NodeTitle;
+	FText NodeTitle{FText::FromString(TEXT("Puzzle Sequencer Node"))};
 
 	UPROPERTY(VisibleDefaultsOnly, Category = "PuzzleSequencerNode")
 	TSubclassOf<UPuzzleSequencer> CompatibleGraphType;
@@ -80,16 +80,16 @@ public:
 	FText ContextMenuName;
 
 	UPROPERTY(EditDefaultsOnly, Category = "PuzzleSequencerNode")
-	EPSENodeLimit ParentLimitType;
+	EPSENodeLimit ParentLimitType{EPSENodeLimit::Limited};
 
 	UPROPERTY(EditDefaultsOnly, Category = "PuzzleSequencerNode", meta = (ClampMin = "0", EditCondition = "ParentLimitType == EPSENodeLimit::Limited", EditConditionHides))
-	int32 ParentLimit;
+	int32 ParentLimit{1};
 
 	UPROPERTY(EditDefaultsOnly, Category = "PuzzleSequencerNode")
-	EPSENodeLimit ChildrenLimitType;
+	EPSENodeLimit ChildrenLimitType{EPSENodeLimit::Limited};
 
 	UPROPERTY(EditDefaultsOnly, Category = "PuzzleSequencerNode", meta = (ClampMin = "0", EditCondition = "ChildrenLimitType == EPSENodeLimit::Limited", EditConditionHides))
-	int32 ChildrenLimit;
+	int32 ChildrenLimit{1};
 #endif
 #pragma endregion Editor
 };
