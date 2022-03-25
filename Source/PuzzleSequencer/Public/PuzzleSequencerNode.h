@@ -38,6 +38,8 @@ public:
 
 #if WITH_EDITOR
 public:
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+	
 	virtual bool IsNameEditable() const;
 
 	virtual FLinearColor GetBackgroundColor() const;
@@ -52,12 +54,19 @@ public:
 	virtual bool CanCreateConnectionFrom(UPuzzleSequencerNode* Other, int32 NumberOfParentNodes, FText& ErrorMessage);
 #endif
 
+private:
+	void UpdatePuzzleActorInformation();
+	void ResetPuzzleActorInformation();
+	
 public:
 	UPROPERTY(VisibleDefaultsOnly, Category="PuzzleSequencerNode")
 	UPuzzleSequencer* Graph{nullptr};
 
+	UPROPERTY(VisibleDefaultsOnly, Category="PuzzleSequencerNode")
+	UWorld* World{nullptr};
+
 	UPROPERTY(EditDefaultsOnly, Category="PuzzleSequencerNode")
-	APuzzleActor* PuzzleActor{nullptr};
+	TSoftObjectPtr<APuzzleActor> PuzzleActor{};
 	
 	UPROPERTY(BlueprintReadOnly, Category="PuzzleSequencerNode")
 	TArray<UPuzzleSequencerNode*> ParentNodes{};

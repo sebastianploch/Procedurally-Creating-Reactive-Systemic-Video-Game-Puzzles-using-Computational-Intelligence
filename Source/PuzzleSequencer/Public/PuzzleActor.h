@@ -23,6 +23,9 @@ public:
 
 	virtual void Tick(float DeltaTime) override;
 
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE EPuzzleType GetPuzzleType() const { return Type; }
+	
 protected:
 	virtual void BeginPlay() override;
 
