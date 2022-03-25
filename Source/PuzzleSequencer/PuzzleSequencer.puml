@@ -1,0 +1,35 @@
+﻿@startuml
+
+class UObject
+class AActor
+
+enum EPuzzleType {
+Start
+Intermediate
+Finish
+}
+
+class PuzzleSequencerActor << Actor Representing Puzzle in the Level >> {
++EPuzzleType Type
+}
+PuzzleSequencerActor <|-- AActor
+PuzzleSequencerActor *-- EPuzzleType
+
+class PuzzleSequencerNode << Node Representing Puzzle Actor in the Graph >> {
+-PuzzleSequencer* Graph
+-PuzzleSequencerActor* PuzzleActor
+}
+PuzzleSequencerNode <|-- UObject
+
+class PuzzleSequencer << Graph >> {
++String Name
++PuzzleSequencerNode[] RootNodes
++PuzzleSequencerNode[] AllNodes
+}
+
+PuzzleSequencer <|-- UObject
+
+PuzzleSequencerNode *-- PuzzleSequencer
+PuzzleSequencerNode *-- PuzzleSequencerActor
+
+@enduml
