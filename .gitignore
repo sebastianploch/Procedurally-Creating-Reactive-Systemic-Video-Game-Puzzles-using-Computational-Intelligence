@@ -82,3 +82,6 @@ Plugins/Developer/RiderLink/*
 
 # Ignore Unreal's Starter Content
 Content/StarterContent/*
+
+# Ignore PyCharm's .idea folder
+Content/Python/.idea/
