@@ -44,6 +44,7 @@ class GameState{
 
 GameState *-- PuzzleObject
 
-note "This solution would not work as the states are not encoded \nin a way that a deep neural network could efficiently learn from. \nAs dynamically cannot change the size of the state, instead \nall pieces have to be represented in a static way so that \nthe model is generalised and can be used without re-training" as Explanation
+note "This solution would not work as the states are not encoded \nin a way that a deep neural network could efficiently learn from. \nAs dynamically cannot change the size of the state, instead \nall pieces have to be represented in a static way so that \nthe model is generalised and can be used without re-training" as Explanation #orange
+note bottom of Explanation #orange : This approach could be fine for just a solver, but will not be sufficient for solver and generator
 
 @enduml
