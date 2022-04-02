@@ -1,0 +1,49 @@
+@startuml
+
+note top of PuzzleObject : Base class used to define concrete puzzle pieces. \nEach puzzle object stores its actual state and a dictionary \nof all possible states.
+abstract class PuzzleObject{
+    +PuzzleObject(available_states)
+
+    +int get_current_state()
+    +Dict get_available_states()
+    +bool is_completed()
+
+    +abstract update_puzzle(action)
+
+    -current_state : int
+    -available_states : Dict
+    -completed : bool
+    -depends_on : PuzzleObject
+}
+
+class Button{
+    +Button()
+    +update_puzzle(action)
+}
+
+class Button implements PuzzleObject
+
+class Door{
+    +Door(depends_on)
+    +update_puzzle(action)
+}
+
+class Door implements PuzzleObject
+
+note top of GameState : Represents the state that the game is. \nAlso stores all puzzles and updates their \nstates during stepping with provided action.
+class GameState{
+    +GameState(puzzles, terminal_puzzle)
+
+    +void step(action)
+    +int get_current_state()
+    +List get_puzzles()
+
+    -game_states : Dict
+    -puzzles : List
+}
+
+GameState *-- PuzzleObject
+
+note "This solution would not work as the states are not encoded \nin a way that a deep neural network could efficiently learn from. \nAs dynamically cannot change the size of the state, instead \nall pieces have to be represented in a static way so that \nthe model is generalised and can be used without re-training" as Explanation
+
+@enduml
