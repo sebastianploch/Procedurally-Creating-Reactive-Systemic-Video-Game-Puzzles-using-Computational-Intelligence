@@ -39,8 +39,9 @@ available_actions = {"idle": 0, "press": 1, "open": 2}
 class PuzzleObject:
     global available_actions
 
-    def __init__(self, available_states):
+    def __init__(self, position, available_states):
         self.current_state = 0
+        self.position = position
         self.available_states = available_states
         self.completed = False
         self.depends_on = None
@@ -48,11 +49,17 @@ class PuzzleObject:
     def get_current_state(self):
         return self.current_state
 
+    def get_position(self):
+        return self.position
+
     def get_available_states(self):
         return self.available_states
 
     def is_completed(self):
         return self.completed
+
+    def get_depends_on(self):
+        return self.depends_on
 
     # To be filled by derived class
     def update_puzzle(self, action):
@@ -60,11 +67,11 @@ class PuzzleObject:
 
 
 class Button(PuzzleObject):
-    def __init__(self):
-        super().__init__({"unpressed": 0, "pressed": 1})
+    def __init__(self, position):
+        super().__init__(position, {"unpressed": 0, "pressed": 1})
 
     def update_puzzle(self, action):
-        if action == available_actions["press"]:
+        if ((action == 1).nonzero(as_tuple=True)[0]) == available_actions["press"]:  # checking the one hot encoding
             if self.completed:
                 return False
 
@@ -74,48 +81,57 @@ class Button(PuzzleObject):
 
 
 class Door(PuzzleObject):
-    def __init__(self, depends_on):
-        super().__init__({"locked": 0, "closed": 1, "open": 2})
+    def __init__(self, position, depends_on):
+        super().__init__(position, {"locked": 0, "closed": 1, "open": 2})
         self.depends_on = depends_on
 
     def update_puzzle(self, action):
-        if self.depends_on.is_completed() and action == available_actions["open"]:
-            if self.completed:
-                return False
+        # Early-out completed puzzle
+        if self.completed:
+            return False
 
+        # Unlock door if dependant object is completed
+        if self.depends_on.is_completed() and self.current_state is self.available_states["locked"]:
+            self.current_state = self.available_states["closed"]
+            return True
+
+        # Open unlocked door
+        if self.current_state == self.available_states["closed"] and \
+                ((action == 1).nonzero(as_tuple=True)[0]) == available_actions["open"]:
             self.current_state = self.available_states["open"]
             self.completed = True
-            return self.completed
+            return True
+
+        return False
 
 
 class GameState:
-    game_states = {"Idle": 0, "In-Progress": 1, "Finished": 2}
-
-    def __init__(self, puzzles, terminal_puzzle):
-        self.current_state = self.game_states["Idle"]
-        self.puzzles = puzzles
-        self.terminal_puzzle = terminal_puzzle
+    def __init__(self, map_width, map_height):
+        self.puzzles = []
+        self.terminal_puzzle = None
+        self.map_width = map_width
+        self.map_height = map_height
+        self.map = np.full((map_width, map_height), -1)
 
     def step(self, action):
         is_terminal = False
         reward = 0.1
 
-        # Early-out if game state is finished
-        if self.current_state == self.game_states["Finished"]:
-            return -1, True
-
-        # Change state to in-progress if stepping idle state
-        if self.current_state is self.game_states["Idle"]:
-            self.current_state = self.game_states["In-Progress"]
-
         # Update puzzle pieces with action
         for puzzle in self.puzzles:
             if puzzle.update_puzzle(action):
                 reward += 0.25  # Increase reward if puzzle succeeded with provided action
+                puzzle_position = puzzle.get_position()
+                self.map[puzzle_position[0], puzzle_position[1]] = puzzle.get_current_state()
+
+                # Update dependants
+                depends_on = puzzle.get_depends_on()
+                if depends_on:
+                    puzzle_position = depends_on.get_position()
+                    self.map[puzzle_position[0], puzzle_position[1]] = depends_on.get_current_state()
 
                 # Terminate if the terminal puzzle is reached and completed
-                if puzzle is self.terminal_puzzle:
-                    self.current_state = self.game_states["Finished"]
+                if puzzle is self.terminal_puzzle and puzzle.is_completed():
                     is_terminal = True
                     reward = 1
                     break
@@ -125,24 +141,97 @@ class GameState:
         print(f"action: {action}, reward: {reward}, terminal: {is_terminal}")
         return reward, is_terminal
 
-    def get_current_state(self):
-        return self.current_state
+    def add_puzzle(self, puzzle):
+        puzzle_x = puzzle.get_position()[0]
+        puzzle_y = puzzle.get_position()[1]
+        self.map[puzzle_x, puzzle_y] = 0
+        self.puzzles.append(puzzle)
+
+    def set_terminal_puzzle(self, puzzle):
+        self.terminal_puzzle = puzzle
+
+    def get_map(self):
+        return self.map
+
+    def get_map_size(self):
+        return self.map_width * self.map_height
 
     def get_puzzles(self):
         return self.puzzles
 
 
-# Puzzle Pieces
-# button = Button()
-# door = Door(button)
+button = Button([1, 1])
+door = Door([2, 2], button)
+final_door = Door([4, 4], door)
+
+gs = GameState(5, 5)
+gs.set_terminal_puzzle(final_door)
+
+gs.add_puzzle(button)
+gs.add_puzzle(door)
+gs.add_puzzle(final_door)
+print(gs.get_map())
+print("\n")
+
+a = torch.zeros([len(available_actions)], dtype=torch.float32)
+a[1] = 1
+gs.step(a)
+print(gs.get_map())
+print("\n")
+
+a[1] = 0
+a[2] = 1
+gs.step(a)
+print(gs.get_map())
+print("\n")
+
+gs.step(a)
+print(gs.get_map())
+print("\n")
+
+
+# class GameState:
+#     game_states = {"Idle": 0, "In-Progress": 1, "Finished": 2}
 #
-# # Instantiate game with puzzle pieces
-# my_game_state = GameState([button, door], door)
+#     def __init__(self, puzzles, terminal_puzzle):
+#         self.current_state = self.game_states["Idle"]
+#         self.puzzles = puzzles
+#         self.terminal_puzzle = terminal_puzzle
 #
-# my_game_state.step(available_actions["idle"])
-# my_game_state.step(available_actions["press"])
-# my_game_state.step(available_actions["press"])
-# my_game_state.step(available_actions["open"])
+#     def step(self, action):
+#         is_terminal = False
+#         reward = 0.1
+#
+#         # Early-out if game state is finished
+#         if self.current_state == self.game_states["Finished"]:
+#             return -1, True
+#
+#         # Change state to in-progress if stepping idle state
+#         if self.current_state is self.game_states["Idle"]:
+#             self.current_state = self.game_states["In-Progress"]
+#
+#         # Update puzzle pieces with action
+#         for puzzle in self.puzzles:
+#             if puzzle.update_puzzle(action):
+#                 reward += 0.25  # Increase reward if puzzle succeeded with provided action
+#
+#                 # Terminate if the terminal puzzle is reached and completed
+#                 if puzzle is self.terminal_puzzle:
+#                     self.current_state = self.game_states["Finished"]
+#                     is_terminal = True
+#                     reward = 1
+#                     break
+#             else:
+#                 reward -= 0.15
+#
+#         print(f"action: {action}, reward: {reward}, terminal: {is_terminal}")
+#         return reward, is_terminal
+#
+#     def get_current_state(self):
+#         return self.current_state
+#
+#     def get_puzzles(self):
+#         return self.puzzles
 
 
 # ----------------------------- NEURAL NETWORK -----------------------------
@@ -158,45 +247,45 @@ class DQN(nn.Module):
         self.replay_memory_size = 50
         self.minibatch_size = 32
 
-        # self.conv1 = nn.Conv2d(4, 32, 8, 4)
-        # self.relu1 = nn.ReLU(inplace=True)
-        # self.conv2 = nn.Conv2d(32, 64, 4, 2)
-        # self.relu2 = nn.ReLU(inplace=True)
-        # self.conv3 = nn.Conv2d(64, 64, 3, 1)
-        # self.relu3 = nn.ReLU(inplace=True)
-        # self.fc4 = nn.Linear(3136, 512)
-        # self.relu4 = nn.ReLU(inplace=True)
-        # self.fc5 = nn.Linear(512, self.num_actions)
-
-        self.layer1 = nn.Linear(4, 32)
+        self.conv1 = nn.Conv2d(4, 32, 8, 4)
         self.relu1 = nn.ReLU(inplace=True)
-        self.layer2 = nn.Linear(32, 64)
+        self.conv2 = nn.Conv2d(32, 64, 4, 2)
         self.relu2 = nn.ReLU(inplace=True)
-        self.layer3 = nn.Linear(64, self.num_actions)
+        self.conv3 = nn.Conv2d(64, 64, 3, 1)
+        self.relu3 = nn.ReLU(inplace=True)
+        self.fc4 = nn.Linear(3136, 512)
+        self.relu4 = nn.ReLU(inplace=True)
+        self.fc5 = nn.Linear(512, self.num_actions)
+
+        # self.layer1 = nn.Linear(4, 32)
+        # self.relu1 = nn.ReLU(inplace=True)
+        # self.layer2 = nn.Linear(32, 64)
+        # self.relu2 = nn.ReLU(inplace=True)
+        # self.layer3 = nn.Linear(64, self.num_actions)
 
     def forward(self, x):
-        # out = self.conv1(x)
-        # out = self.relu1(out)
-        # out = self.conv2(out)
-        # out = self.relu2(out)
-        # out = self.conv3(out)
-        # out = self.relu3(out)
-        # out = out.view(out.size()[0], -1)
-        # out = self.fc4(out)
-        # out = self.relu4(out)
-        # out = self.fc5(out)
-
-        out = self.layer1(x)
+        out = self.conv1(x)
         out = self.relu1(out)
-        out = self.layer2(out)
+        out = self.conv2(out)
         out = self.relu2(out)
-        out = self.layer3(out)
+        out = self.conv3(out)
+        out = self.relu3(out)
+        out = out.view(out.size()[0], -1)
+        out = self.fc4(out)
+        out = self.relu4(out)
+        out = self.fc5(out)
+
+        # out = self.layer1(x)
+        # out = self.relu1(out)
+        # out = self.layer2(out)
+        # out = self.relu2(out)
+        # out = self.layer3(out)
         return out
 
 
 def init_weights(m):
     if type(m) == nn.Conv2d or type(m) == nn.Linear:
-        torch.nn.init.uniform_(m.weight, -0.01, 0.01)
+        torch.nn.init.uniform(m.weight, -0.01, 0.01)
         m.bias.data.fill_(0.01)
 
 
@@ -209,8 +298,8 @@ def train(model, start):
     door = Door(button)
     game_state = GameState([button, door], door)
 
-    action = torch.zeros([1], dtype=torch.float32)
-    action[0] = 0
+    action = torch.zeros([model.num_actions], dtype=torch.float32)
+    action[0] = 1
 
     reward, terminal = game_state.step(action)
     state = game_state.get_current_state()
