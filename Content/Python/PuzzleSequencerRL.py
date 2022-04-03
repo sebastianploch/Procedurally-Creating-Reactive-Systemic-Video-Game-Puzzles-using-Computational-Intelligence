@@ -32,7 +32,8 @@ transition = namedtuple("Transition", ("state", "action", "next_state", "reward"
 
 # ----------------------------- LOGIC -----------------------------
 # Test Sequence = Press Button -> Open Door
-available_actions = {"idle": 0., "press": 1., "open": 2.}
+available_actions = {"idle": 0., "press": 1., "open": 2.,  # Puzzle Interaction
+                     "select_up": 3., "select_down": 4., "select_left": 5., "select_right": 6.}  # Grid Selection
 """All available actions in the world"""
 
 
@@ -113,33 +114,110 @@ class GameState:
         self.map_height = map_height
         self.map = np.full((map_width, map_height), -1.)
 
+        self.current_grid_pos_x = 0
+        self.current_grid_pos_y = 0
+        self.selected_puzzle = None
+
     def step(self, action):
         is_terminal = False
-        reward = 0.1
+        reward = 0.
 
-        # Update puzzle pieces with action
-        for puzzle in self.puzzles:
-            if puzzle.update_puzzle(action):
+        # Early-out idle action
+        if ((action == 1.).nonzero(as_tuple=True)[0]) == available_actions["idle"]:
+            return reward, is_terminal
+
+        # Select grid
+        if ((action == 1.).nonzero(as_tuple=True)[0]) == available_actions["select_up"]:
+            if self.current_grid_pos_y + 1 < self.map_height:
+                reward += 0.01
+                self.current_grid_pos_y += 1
+                print(f"current grid pos X: {self.current_grid_pos_x} Y: {self.current_grid_pos_y}\n")
+                self.update_selected_puzzle()
+            else:
+                reward -= 0.5
+            return reward, is_terminal
+
+        elif ((action == 1.).nonzero(as_tuple=True)[0]) == available_actions["select_down"]:
+            if self.current_grid_pos_y - 1 >= 0:
+                reward += 0.01
+                self.current_grid_pos_y -= 1
+                print(f"current grid pos X: {self.current_grid_pos_x} Y: {self.current_grid_pos_y}\n")
+                self.update_selected_puzzle()
+            else:
+                reward -= 0.5
+            return reward, is_terminal
+
+        elif ((action == 1.).nonzero(as_tuple=True)[0]) == available_actions["select_left"]:
+            if self.current_grid_pos_x - 1 >= 0:
+                reward += 0.01
+                self.current_grid_pos_x -= 1
+                print(f"current grid pos X: {self.current_grid_pos_x} Y: {self.current_grid_pos_y}\n")
+                self.update_selected_puzzle()
+            else:
+                reward -= 0.5
+            return reward, is_terminal
+
+        elif ((action == 1.).nonzero(as_tuple=True)[0]) == available_actions["select_right"]:
+            if self.current_grid_pos_x + 1 < self.map_width:
+                reward += 0.01
+                self.current_grid_pos_x += 1
+                print(f"current grid pos X: {self.current_grid_pos_x} Y: {self.current_grid_pos_y}\n")
+                self.update_selected_puzzle()
+            else:
+                reward -= 0.5
+            return reward, is_terminal
+
+        # Update puzzle it is in the selected grid space
+        if self.selected_puzzle is not None:
+            if self.selected_puzzle.update_puzzle(action):
                 reward += 0.25  # Increase reward if puzzle succeeded with provided action
-                puzzle_position = puzzle.get_position()
-                self.map[puzzle_position[0], puzzle_position[1]] = puzzle.get_current_state()
+                puzzle_position = self.selected_puzzle.get_position()
+                self.map[puzzle_position[0], puzzle_position[1]] = self.selected_puzzle.get_current_state()
 
                 # Update dependants
-                depends_on = puzzle.get_depends_on()
+                depends_on = self.selected_puzzle.get_depends_on()
                 if depends_on:
                     puzzle_position = depends_on.get_position()
                     self.map[puzzle_position[0], puzzle_position[1]] = depends_on.get_current_state()
 
                 # Terminate if the terminal puzzle is reached and completed
-                if puzzle is self.terminal_puzzle and puzzle.is_completed():
+                if self.selected_puzzle is self.terminal_puzzle and self.selected_puzzle.is_completed():
                     is_terminal = True
                     reward = 1.
-                    break
             else:
                 reward -= 0.15
 
+        # else:
+        #     # Update puzzle pieces with action
+        #     for puzzle in self.puzzles:
+        #         if puzzle.update_puzzle(action):
+        #             reward += 0.25  # Increase reward if puzzle succeeded with provided action
+        #             puzzle_position = puzzle.get_position()
+        #             self.map[puzzle_position[0], puzzle_position[1]] = puzzle.get_current_state()
+        #
+        #             # Update dependants
+        #             depends_on = puzzle.get_depends_on()
+        #             if depends_on:
+        #                 puzzle_position = depends_on.get_position()
+        #                 self.map[puzzle_position[0], puzzle_position[1]] = depends_on.get_current_state()
+        #
+        #             # Terminate if the terminal puzzle is reached and completed
+        #             if puzzle is self.terminal_puzzle and puzzle.is_completed():
+        #                 is_terminal = True
+        #                 reward = 1.
+        #                 break
+        #         else:
+        #             reward -= 0.15
+
         print(f"action: {action}, reward: {reward}, terminal: {is_terminal}")
         return reward, is_terminal
+
+    def update_selected_puzzle(self):
+        if self.map[self.current_grid_pos_x, self.current_grid_pos_y] != -1:
+            for puzzle in self.puzzles:
+                if puzzle.get_position() == [self.current_grid_pos_x, self.current_grid_pos_y]:
+                    self.selected_puzzle = puzzle
+                    break
 
     def add_puzzle(self, puzzle):
         puzzle_x = puzzle.get_position()[0]
@@ -158,6 +236,13 @@ class GameState:
 
     def get_puzzles(self):
         return self.puzzles
+
+    def get_position_map(self):
+        position_map = np.full((self.map_width, self.map_height), 0.)
+        position_map[self.current_grid_pos_x, self.current_grid_pos_y] = 1.
+        # print("\n --------- POSITION MAP ---------")
+        # print(position_map)
+        return position_map
 
 
 # ------------------------------ TEST -----------------------------------------
@@ -199,13 +284,13 @@ class DQN(nn.Module):
         self.gamma = 0.99
         self.final_epsilon = 0.0001
         self.initial_epsilon = 0.1
-        self.num_iterations = 300
-        self.replay_memory_size = 50
+        self.num_iterations = 10000
+        self.replay_memory_size = 500
         self.minibatch_size = 32
 
         self.layer1 = nn.Linear(4, 32, dtype=torch.float64)
         self.relu1 = nn.ReLU(inplace=True)
-        self.layer2 = nn.Linear(128, 512, dtype=torch.float64)
+        self.layer2 = nn.Linear(256, 512, dtype=torch.float64)
         self.relu2 = nn.ReLU(inplace=True)
         self.layer3 = nn.Linear(512, self.num_actions, dtype=torch.float64)
 
@@ -225,7 +310,7 @@ def init_weights(m):
         m.bias.data.fill_(0.01)
 
 
-def train(model, start, losses, q_values):
+def train(model, start, losses, q_values, completions):
     optimiser = optim.Adam(model.parameters(), lr=1e-6)
     criterion = nn.MSELoss()
     replay_memory = []
@@ -239,8 +324,8 @@ def train(model, start, losses, q_values):
 
     game_state.add_puzzle(button)
     game_state.add_puzzle(door)
-    print(game_state.get_map())
-    print("\n")
+    # print(game_state.get_map())
+    # print("\n")
 
     action = torch.zeros([model.num_actions], dtype=torch.float64)
     action[0] = 1
@@ -248,7 +333,9 @@ def train(model, start, losses, q_values):
         action = action.cuda()
 
     reward, terminal = game_state.step(action)
-    state = torch.tensor(game_state.get_map()).unsqueeze(0)
+    state = torch.cat((torch.tensor(game_state.get_map()), torch.tensor(game_state.get_position_map()))).unsqueeze(0)
+    # print("\n ------------- STATE ------------")
+    # print(state)
 
     if torch.cuda.is_available():
         state = state.cuda()
@@ -279,7 +366,8 @@ def train(model, start, losses, q_values):
 
         reward, terminal = game_state.step(action)
         # state_ = game_state.get_map()
-        state_ = torch.tensor(game_state.get_map()).unsqueeze(0)
+        state_ = torch.cat((torch.tensor(game_state.get_map()),
+                            torch.tensor(game_state.get_position_map()))).unsqueeze(0)
         if torch.cuda.is_available():
             state_ = state_.cuda()
 
@@ -338,7 +426,21 @@ def train(model, start, losses, q_values):
               np.max(output.cpu().detach().numpy()))
 
         if terminal:
-            return
+            completions.append(iteration)
+
+            # initialise the map!
+            button = Button([1, 1])
+            door = Door([2, 2], button)
+
+            game_state = GameState(4, 4)
+            game_state.set_terminal_puzzle(door)
+
+            game_state.add_puzzle(button)
+            game_state.add_puzzle(door)
+            state = torch.cat((torch.tensor(game_state.get_map()),
+                               torch.tensor(game_state.get_position_map()))).unsqueeze(0)
+            if torch.cuda.is_available():
+                state = state.cuda()
 
 
 def test(model):
@@ -399,21 +501,33 @@ def main(mode):
         start = time.time()
         losses = []
         q_values = []
+        completions = []
 
-        train(model, start, losses, q_values)
+        train(model, start, losses, q_values, completions)
 
+        # Loss
         fig, ax = plt.subplots()
         iterations = np.arange(0, len(losses)).tolist()
-        ax.plot(iterations, losses, linewidth=2.0)
-        ax.set_title("Loss over iterations")
-        ax.set_xlabel("iterations")
+        ax.plot(iterations, losses)
+        ax.set_title(f"Loss over iterations")
+        ax.set_xlabel(f"iterations [COMPLETIONS: {len(completions)}]")
         ax.set_ylabel("loss")
 
+        # Mark completions
+        for completion in completions:
+            # ax.plot(completion, losses[completion], 'o', color='red')
+            ax.axvspan(completion, completion, color='red', alpha=0.5)
+
+        # Q Values
         fig2, ax2 = plt.subplots()
-        ax2.plot(iterations, q_values, linewidth=2.0)
+        ax2.plot(iterations, q_values)
         ax2.set_title("Q values over iterations")
-        ax2.set_xlabel("iterations")
+        ax2.set_xlabel(f"iterations [COMPLETIONS: {len(completions)}]")
         ax2.set_ylabel("Q values")
+
+        # Mark completions
+        for completion in completions:
+            ax2.axvspan(completion, completion, color='red', alpha=0.5)
 
         if is_ipython:
             display.clear_output(wait=True)
