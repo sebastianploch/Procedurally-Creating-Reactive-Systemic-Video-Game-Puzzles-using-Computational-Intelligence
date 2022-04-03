@@ -418,8 +418,9 @@ def train(model, start, losses, q_values, completions):
         state = state_  # update the state for the next step
         iteration += 1
 
-        if iteration % 50 == 0:
-            torch.save(model, "pretrained_model/current_model_" + str(iteration) + ".pth")
+        # TODO: Uncomment once want saving
+        # if iteration % 50 == 0:
+        #     torch.save(model, "pretrained_model/current_model_" + str(iteration) + ".pth")
 
         print("iteration:", iteration, "elapsed time:", time.time() - start, "epsilon:", epsilon, "action:",
               action_index.cpu().detach().numpy(), "reward:", reward.numpy()[0][0], "Q max:",
