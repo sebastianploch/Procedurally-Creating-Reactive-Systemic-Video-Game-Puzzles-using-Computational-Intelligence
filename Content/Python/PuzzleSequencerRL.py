@@ -78,7 +78,9 @@ class Button(PuzzleObject):
 
             self.current_state = self.available_states["pressed"]
             self.completed = True
-        return self.completed
+            return True
+
+        return False
 
 
 class Door(PuzzleObject):
@@ -94,7 +96,7 @@ class Door(PuzzleObject):
         # Unlock door if dependant object is completed
         if self.depends_on.is_completed() and self.current_state is self.available_states["locked"]:
             self.current_state = self.available_states["closed"]
-            return True
+            # return True
 
         # Open unlocked door
         if self.current_state == self.available_states["closed"] and \
