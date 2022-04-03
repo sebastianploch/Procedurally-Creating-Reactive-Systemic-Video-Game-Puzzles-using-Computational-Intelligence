@@ -32,7 +32,7 @@ transition = namedtuple("Transition", ("state", "action", "next_state", "reward"
 
 # ----------------------------- LOGIC -----------------------------
 # Test Sequence = Press Button -> Open Door
-available_actions = {"idle": 0, "press": 1, "open": 2}
+available_actions = {"idle": 0., "press": 1., "open": 2.}
 """All available actions in the world"""
 
 
@@ -40,7 +40,7 @@ class PuzzleObject:
     global available_actions
 
     def __init__(self, position, available_states):
-        self.current_state = 0
+        self.current_state = 0.
         self.position = position
         self.available_states = available_states
         self.completed = False
@@ -68,21 +68,21 @@ class PuzzleObject:
 
 class Button(PuzzleObject):
     def __init__(self, position):
-        super().__init__(position, {"unpressed": 0, "pressed": 1})
+        super().__init__(position, {"unpressed": 0., "pressed": 1.})
 
     def update_puzzle(self, action):
-        if ((action == 1).nonzero(as_tuple=True)[0]) == available_actions["press"]:  # checking the one hot encoding
+        if ((action == 1.).nonzero(as_tuple=True)[0]) == available_actions["press"]:  # checking the one hot encoding
             if self.completed:
                 return False
 
             self.current_state = self.available_states["pressed"]
             self.completed = True
-            return self.completed
+        return self.completed
 
 
 class Door(PuzzleObject):
     def __init__(self, position, depends_on):
-        super().__init__(position, {"locked": 0, "closed": 1, "open": 2})
+        super().__init__(position, {"locked": 0., "closed": 1., "open": 2.})
         self.depends_on = depends_on
 
     def update_puzzle(self, action):
@@ -97,7 +97,7 @@ class Door(PuzzleObject):
 
         # Open unlocked door
         if self.current_state == self.available_states["closed"] and \
-                ((action == 1).nonzero(as_tuple=True)[0]) == available_actions["open"]:
+                ((action == 1.).nonzero(as_tuple=True)[0]) == available_actions["open"]:
             self.current_state = self.available_states["open"]
             self.completed = True
             return True
@@ -111,7 +111,7 @@ class GameState:
         self.terminal_puzzle = None
         self.map_width = map_width
         self.map_height = map_height
-        self.map = np.full((map_width, map_height), -1)
+        self.map = np.full((map_width, map_height), -1.)
 
     def step(self, action):
         is_terminal = False
@@ -133,7 +133,7 @@ class GameState:
                 # Terminate if the terminal puzzle is reached and completed
                 if puzzle is self.terminal_puzzle and puzzle.is_completed():
                     is_terminal = True
-                    reward = 1
+                    reward = 1.
                     break
             else:
                 reward -= 0.15
@@ -144,7 +144,7 @@ class GameState:
     def add_puzzle(self, puzzle):
         puzzle_x = puzzle.get_position()[0]
         puzzle_y = puzzle.get_position()[1]
-        self.map[puzzle_x, puzzle_y] = 0
+        self.map[puzzle_x, puzzle_y] = 0.
         self.puzzles.append(puzzle)
 
     def set_terminal_puzzle(self, puzzle):
@@ -160,37 +160,38 @@ class GameState:
         return self.puzzles
 
 
-button = Button([1, 1])
-door = Door([2, 2], button)
-final_door = Door([4, 4], door)
+# ------------------------------ TEST -----------------------------------------
+# button = Button([1, 1])
+# door = Door([2, 2], button)
+# final_door = Door([4, 4], door)
+#
+# gs = GameState(5, 5)
+# gs.set_terminal_puzzle(final_door)
+#
+# gs.add_puzzle(button)
+# gs.add_puzzle(door)
+# gs.add_puzzle(final_door)
+# print(gs.get_map())
+# print("\n")
+#
+# a = torch.zeros([len(available_actions)], dtype=torch.float32)
+# a[1] = 1
+# gs.step(a)
+# print(gs.get_map())
+# print("\n")
+#
+# a[1] = 0
+# a[2] = 1
+# gs.step(a)
+# print(gs.get_map())
+# print("\n")
+#
+# gs.step(a)
+# print(gs.get_map())
+# print("\n")
 
-gs = GameState(5, 5)
-gs.set_terminal_puzzle(final_door)
 
-gs.add_puzzle(button)
-gs.add_puzzle(door)
-gs.add_puzzle(final_door)
-print(gs.get_map())
-print("\n")
-
-a = torch.zeros([len(available_actions)], dtype=torch.float32)
-a[1] = 1
-gs.step(a)
-print(gs.get_map())
-print("\n")
-
-a[1] = 0
-a[2] = 1
-gs.step(a)
-print(gs.get_map())
-print("\n")
-
-gs.step(a)
-print(gs.get_map())
-print("\n")
-
-
-# class GameState:
+# class GameStateOld:
 #     game_states = {"Idle": 0, "In-Progress": 1, "Finished": 2}
 #
 #     def __init__(self, puzzles, terminal_puzzle):
@@ -247,39 +248,41 @@ class DQN(nn.Module):
         self.replay_memory_size = 50
         self.minibatch_size = 32
 
-        self.conv1 = nn.Conv2d(4, 32, 8, 4)
-        self.relu1 = nn.ReLU(inplace=True)
-        self.conv2 = nn.Conv2d(32, 64, 4, 2)
-        self.relu2 = nn.ReLU(inplace=True)
-        self.conv3 = nn.Conv2d(64, 64, 3, 1)
-        self.relu3 = nn.ReLU(inplace=True)
-        self.fc4 = nn.Linear(3136, 512)
-        self.relu4 = nn.ReLU(inplace=True)
-        self.fc5 = nn.Linear(512, self.num_actions)
-
-        # self.layer1 = nn.Linear(4, 32)
+        # self.conv1 = nn.Conv2d(3, 32, 8, 4)
         # self.relu1 = nn.ReLU(inplace=True)
-        # self.layer2 = nn.Linear(32, 64)
+        # self.conv2 = nn.Conv2d(32, 64, 4, 2)
         # self.relu2 = nn.ReLU(inplace=True)
-        # self.layer3 = nn.Linear(64, self.num_actions)
+        # self.conv3 = nn.Conv2d(64, 64, 3, 1)
+        # self.relu3 = nn.ReLU(inplace=True)
+        # self.fc4 = nn.Linear(3136, 512)
+        # self.relu4 = nn.ReLU(inplace=True)
+        # self.fc5 = nn.Linear(512, self.num_actions)
+
+        self.layer1 = nn.Linear(4, 32, dtype=torch.float64)
+        self.relu1 = nn.ReLU(inplace=True)
+        self.layer2 = nn.Linear(128, 512, dtype=torch.float64)
+        self.relu2 = nn.ReLU(inplace=True)
+        self.layer3 = nn.Linear(512, self.num_actions, dtype=torch.float64)
 
     def forward(self, x):
-        out = self.conv1(x)
-        out = self.relu1(out)
-        out = self.conv2(out)
-        out = self.relu2(out)
-        out = self.conv3(out)
-        out = self.relu3(out)
-        out = out.view(out.size()[0], -1)
-        out = self.fc4(out)
-        out = self.relu4(out)
-        out = self.fc5(out)
-
-        # out = self.layer1(x)
+        # out = self.conv1(x)
         # out = self.relu1(out)
-        # out = self.layer2(out)
+        # out = self.conv2(out)
         # out = self.relu2(out)
-        # out = self.layer3(out)
+        # out = self.conv3(out)
+        # out = self.relu3(out)
+        # out = out.view(out.size()[0], -1)
+        # out = self.fc4(out)
+        # out = self.relu4(out)
+        # out = self.fc5(out)
+
+        out = self.layer1(x)
+        out = self.relu1(out)
+        out = out.view(out.size()[0], -1)
+        out = self.layer2(out)
+        out = self.relu2(out)
+        out = self.layer3(out)
+
         return out
 
 
@@ -289,20 +292,33 @@ def init_weights(m):
         m.bias.data.fill_(0.01)
 
 
-def train(model, start):
+def train(model, start, losses, q_values):
     optimiser = optim.Adam(model.parameters(), lr=1e-6)
     criterion = nn.MSELoss()
     replay_memory = []
 
-    button = Button()
-    door = Door(button)
-    game_state = GameState([button, door], door)
+    # initialise the map!
+    button = Button([1, 1])
+    door = Door([2, 2], button)
 
-    action = torch.zeros([model.num_actions], dtype=torch.float32)
+    game_state = GameState(4, 4)
+    game_state.set_terminal_puzzle(door)
+
+    game_state.add_puzzle(button)
+    game_state.add_puzzle(door)
+    print(game_state.get_map())
+    print("\n")
+
+    action = torch.zeros([model.num_actions], dtype=torch.float64)
     action[0] = 1
+    if torch.cuda.is_available():
+        action = action.cuda()
 
     reward, terminal = game_state.step(action)
-    state = game_state.get_current_state()
+    state = torch.tensor(game_state.get_map()).unsqueeze(0)
+
+    if torch.cuda.is_available():
+        state = state.cuda()
 
     epsilon = model.initial_epsilon
     iteration = 0
@@ -310,29 +326,32 @@ def train(model, start):
     epsilon_decrements = np.linspace(model.initial_epsilon, model.final_epsilon, model.num_iterations)
 
     while iteration < model.num_iterations:
-        output = model(torch.tensor(state))[0]
+        output = model(torch.tensor(state).clone().detach())[0]
 
-        action = torch.zeros([model.num_actions], dtype=torch.float32)  # initialise action
+        action = torch.zeros([model.num_actions], dtype=torch.float64)  # initialise action
         if torch.cuda.is_available():
             action = action.cuda()
 
         random_action = random.random() <= epsilon
         if random_action:
             print("picked random action :)")
-        action_index = [torch.randint(model.num_actions, torch.Size([]), dtype=torch.int)
+        action_index = [torch.randint(model.num_actions, torch.Size([]), dtype=torch.int32)
                         if random_action
                         else torch.argmax(output)][0]
 
         if torch.cuda.is_available():
             action_index = action_index.cuda()
 
-        action[action_index] = 0
+        action[action_index] = 1.
 
         reward, terminal = game_state.step(action)
-        state_ = game_state.get_current_state()
+        # state_ = game_state.get_map()
+        state_ = torch.tensor(game_state.get_map()).unsqueeze(0)
+        if torch.cuda.is_available():
+            state_ = state_.cuda()
 
         action = action.unsqueeze(0)
-        reward = torch.from_numpy(np.array([reward], dtype=np.float32)).unsqueeze(0)
+        reward = torch.from_numpy(np.array([reward], dtype=np.float64)).unsqueeze(0)
 
         replay_memory.append((state, action, reward, state_, terminal))
 
@@ -343,8 +362,10 @@ def train(model, start):
 
         minibatch = random.sample(replay_memory, min(len(replay_memory), model.minibatch_size))
 
-        # TODO might be wrong, but could be right...
-        state_batch, action_batch, reward_batch, state__batch = [d for d in minibatch]
+        state_batch = torch.cat(tuple(d[0] for d in minibatch))
+        action_batch = torch.cat(tuple(d[1] for d in minibatch))
+        reward_batch = torch.cat(tuple(d[2] for d in minibatch))
+        state__batch = torch.cat(tuple(d[3] for d in minibatch))
 
         if torch.cuda.is_available():
             state_batch = state_batch.cuda()
@@ -359,12 +380,15 @@ def train(model, start):
                                   for i in range(len(minibatch))))
 
         q_value = torch.sum(model(state_batch) * action_batch, dim=1)  # extract the Q-value
+        # q_value = model(state_batch).gather(1, action_batch)  # extract the Q-value
+        q_values = q_value
 
         optimiser.zero_grad()  # reset the gradients
 
         y_batch = y_batch.detach()
 
         loss = criterion(q_value, y_batch)
+        losses.append(loss.cpu().item())
 
         # backward pass to update the network
         loss.backward()
@@ -380,6 +404,9 @@ def train(model, start):
               action_index.cpu().detach().numpy(), "reward:", reward.numpy()[0][0], "Q max:",
               np.max(output.cpu().detach().numpy()))
 
+        if terminal:
+            return
+
 
 def test(model):
     button = Button()
@@ -387,16 +414,16 @@ def test(model):
     game_state = GameState([button, door], door)
 
     # TODO should this be a tensor instead? like in the tutorial
-    # action = torch.zeros([model.num_actions], dtype=torch.float32)
+    # action = torch.zeros([model.num_actions], dtype=torch.float64)
     # action[0] = 0
     action = 0
     reward, terminal = game_state.step(action)
-    state = game_state.get_current_state()
+    state = game_state.get_map()
 
     while True:
         output = model(state)[0]
 
-        action = torch.zeros([model.num_actions], dtype=torch.float32)
+        action = torch.zeros([model.num_actions], dtype=torch.float64)
         if torch.cuda.is_available():
             action = action.cuda()
 
@@ -407,7 +434,7 @@ def test(model):
 
         # TODO determine next state and reward :D (the cool stuffz)
         reward, terminal = game_state.step(action)
-        state_ = game_state.get_current_state()
+        state_ = game_state.get_map()
 
         state = state_  # TODO do we need to break at some point? lol the git code doesn't for some reason
 
@@ -437,11 +464,23 @@ def main(mode):
 
         model.apply(init_weights)
         start = time.time()
+        losses = []
+        q_values = []
 
-        train(model, start)
+        train(model, start, losses, q_values)
 
-# if __name__ == "__main__":
-#     main(sys.argv[1])
+        fig, ax = plt.subplots()
+        iterations = np.arange(0, len(losses)).tolist()
+        ax.plot(iterations, losses, linewidth=2.0)
+
+        # fig2, ax2 = plt.subplots()
+        # ax2.plot(iterations, q_values, linewidth=2.0)
+
+        plt.show(block=True)
+
+
+if __name__ == "__main__":
+    main(sys.argv[1])
 
 # # # Cyclic buffer used to hold observed transitions
 # class ReplayMemory(object):
