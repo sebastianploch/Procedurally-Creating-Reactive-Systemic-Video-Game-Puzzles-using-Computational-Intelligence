@@ -32,8 +32,9 @@ transition = namedtuple("Transition", ("state", "action", "next_state", "reward"
 
 # ----------------------------- LOGIC -----------------------------
 # Test Sequence = Press Button -> Open Door
-available_actions = {"idle": 0., "press": 1., "open": 2.,  # Puzzle Interaction
-                     "select_up": 3., "select_down": 4., "select_left": 5., "select_right": 6.}  # Grid Selection
+available_actions = {"idle": 0., "press": 1., "activate": 2., "open": 3., "place_pressure_plate": 4.,
+                     # Puzzle Interaction
+                     "move_up": 5., "move_down": 6., "move_left": 7., "move_right": 8.}  # Grid Selection
 """All available actions in the world"""
 
 
@@ -77,6 +78,24 @@ class Button(PuzzleObject):
                 return False
 
             self.current_state = self.available_states["pressed"]
+            self.completed = True
+            return True
+
+        return False
+
+
+class PressurePlate(PuzzleObject):
+    def __init__(self, position, depends_on):
+        super().__init__(position, {"de-activated": 0., "activated": 1.})
+        self.depends_on = depends_on
+
+    def update_puzzle(self, action):
+        if self.completed:
+            return False
+
+        if self.depends_on.is_completed() and \
+                ((action == 1.).nonzero(as_tuple=True)[0]) == available_actions["activate"]:
+            self.current_state = self.available_states["activated"]
             self.completed = True
             return True
 
@@ -129,17 +148,7 @@ class GameState:
             return reward, is_terminal
 
         # Select grid
-        if ((action == 1.).nonzero(as_tuple=True)[0]) == available_actions["select_up"]:
-            if self.current_grid_pos_y + 1 < self.map_height:
-                reward += 0.01
-                self.current_grid_pos_y += 1
-                print(f"current grid pos X: {self.current_grid_pos_x} Y: {self.current_grid_pos_y}\n")
-                self.update_selected_puzzle()
-            else:
-                reward -= 0.5
-            return reward, is_terminal
-
-        elif ((action == 1.).nonzero(as_tuple=True)[0]) == available_actions["select_down"]:
+        if ((action == 1.).nonzero(as_tuple=True)[0]) == available_actions["move_up"]:
             if self.current_grid_pos_y - 1 >= 0:
                 reward += 0.01
                 self.current_grid_pos_y -= 1
@@ -149,7 +158,17 @@ class GameState:
                 reward -= 0.5
             return reward, is_terminal
 
-        elif ((action == 1.).nonzero(as_tuple=True)[0]) == available_actions["select_left"]:
+        elif ((action == 1.).nonzero(as_tuple=True)[0]) == available_actions["move_down"]:
+            if self.current_grid_pos_y + 1 < self.map_height:
+                reward += 0.01
+                self.current_grid_pos_y += 1
+                print(f"current grid pos X: {self.current_grid_pos_x} Y: {self.current_grid_pos_y}\n")
+                self.update_selected_puzzle()
+            else:
+                reward -= 0.5
+            return reward, is_terminal
+
+        elif ((action == 1.).nonzero(as_tuple=True)[0]) == available_actions["move_left"]:
             if self.current_grid_pos_x - 1 >= 0:
                 reward += 0.01
                 self.current_grid_pos_x -= 1
@@ -159,7 +178,7 @@ class GameState:
                 reward -= 0.5
             return reward, is_terminal
 
-        elif ((action == 1.).nonzero(as_tuple=True)[0]) == available_actions["select_right"]:
+        elif ((action == 1.).nonzero(as_tuple=True)[0]) == available_actions["move_right"]:
             if self.current_grid_pos_x + 1 < self.map_width:
                 reward += 0.01
                 self.current_grid_pos_x += 1
@@ -230,6 +249,9 @@ class GameState:
     def set_terminal_puzzle(self, puzzle):
         self.terminal_puzzle = puzzle
 
+    def get_terminal_puzzle(self):
+        return self.terminal_puzzle
+
     def get_map(self):
         return self.map
 
@@ -241,41 +263,62 @@ class GameState:
 
     def get_position_map(self):
         position_map = np.full((self.map_width, self.map_height), 0.)
-        position_map[self.current_grid_pos_x, self.current_grid_pos_y] = 1.
+        position_map[self.current_grid_pos_y, self.current_grid_pos_x] = 1.
         # print("\n --------- POSITION MAP ---------")
         # print(position_map)
         return position_map
 
 
 # ------------------------------ TEST -----------------------------------------
+
+# game_state = GameState(5, 5)
+#
 # button = Button([1, 1])
-# door = Door([2, 2], button)
-# final_door = Door([4, 4], door)
+# pressure_plate = PressurePlate([2, 2], button)
+# door = Door([3, 3], pressure_plate)
 #
-# gs = GameState(5, 5)
-# gs.set_terminal_puzzle(final_door)
+# game_state.add_puzzle(button)
+# game_state.add_puzzle(pressure_plate)
+# game_state.add_puzzle(door)
+# game_state.set_terminal_puzzle(door)
+# print(game_state.get_map())
 #
-# gs.add_puzzle(button)
-# gs.add_puzzle(door)
-# gs.add_puzzle(final_door)
-# print(gs.get_map())
-# print("\n")
+# action = torch.zeros([len(available_actions)], dtype=torch.float64)
+# action[int(available_actions["move_down"])] = 1.  # move down
+# game_state.step(action)
 #
-# a = torch.zeros([len(available_actions)], dtype=torch.float32)
-# a[1] = 1
-# gs.step(a)
-# print(gs.get_map())
-# print("\n")
+# action = torch.zeros([len(available_actions)], dtype=torch.float64)
+# action[int(available_actions["move_right"])] = 1.  # move down
+# game_state.step(action)
 #
-# a[1] = 0
-# a[2] = 1
-# gs.step(a)
-# print(gs.get_map())
-# print("\n")
+# action = torch.zeros([len(available_actions)], dtype=torch.float64)
+# action[int(available_actions["press"])] = 1.  # move down
+# game_state.step(action)
 #
-# gs.step(a)
-# print(gs.get_map())
-# print("\n")
+# action = torch.zeros([len(available_actions)], dtype=torch.float64)
+# action[int(available_actions["move_down"])] = 1.  # move down
+# game_state.step(action)
+#
+# action = torch.zeros([len(available_actions)], dtype=torch.float64)
+# action[int(available_actions["move_right"])] = 1.  # move down
+# game_state.step(action)
+#
+# # action = torch.zeros([len(available_actions)], dtype=torch.float64)
+# # action[int(available_actions["activate"])] = 1.  # move down
+# # game_state.step(action)
+#
+# action = torch.zeros([len(available_actions)], dtype=torch.float64)
+# action[int(available_actions["move_down"])] = 1.  # move down
+# game_state.step(action)
+#
+# action = torch.zeros([len(available_actions)], dtype=torch.float64)
+# action[int(available_actions["move_right"])] = 1.  # move down
+# game_state.step(action)
+#
+# action = torch.zeros([len(available_actions)], dtype=torch.float64)
+# action[int(available_actions["open"])] = 1.  # move down
+# game_state.step(action)
+
 
 # ----------------------------- NEURAL NETWORK -----------------------------
 class DQN(nn.Module):
@@ -538,6 +581,5 @@ def main(mode):
         else:
             plt.show(block=True)
 
-
-if __name__ == "__main__":
-    main(sys.argv[1])
+# if __name__ == "__main__":
+#     main(sys.argv[1])
