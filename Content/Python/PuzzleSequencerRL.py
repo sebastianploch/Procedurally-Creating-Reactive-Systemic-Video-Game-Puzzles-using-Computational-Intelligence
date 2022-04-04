@@ -73,15 +73,24 @@ class Button(PuzzleObject):
         super().__init__(position, {"unpressed": 0., "pressed": 1.})
 
     def update_puzzle(self, action):
+        reward = 0.
+
+        if self.completed:
+            return reward
+
         if ((action == 1.).nonzero(as_tuple=True)[0]) == available_actions["press"]:  # checking the one hot encoding
             if self.completed:
-                return False
+                reward = -0.15
 
             self.current_state = self.available_states["pressed"]
             self.completed = True
-            return True
+            reward = 0.25
 
-        return False
+        # punish
+        else:
+            reward = -0.15
+
+        return reward
 
 
 class PressurePlate(PuzzleObject):
@@ -90,16 +99,22 @@ class PressurePlate(PuzzleObject):
         self.depends_on = depends_on
 
     def update_puzzle(self, action):
+        reward = 0.
+
         if self.completed:
-            return False
+            return reward
 
         if self.depends_on.is_completed() and \
                 ((action == 1.).nonzero(as_tuple=True)[0]) == available_actions["activate"]:
             self.current_state = self.available_states["activated"]
             self.completed = True
-            return True
+            reward = 0.25
 
-        return False
+        # punish
+        else:
+            reward = -0.15
+
+        return reward
 
 
 class Door(PuzzleObject):
@@ -108,23 +123,28 @@ class Door(PuzzleObject):
         self.depends_on = depends_on
 
     def update_puzzle(self, action):
+        reward = 0.
+
         # Early-out completed puzzle
         if self.completed:
-            return False
+            return reward
 
         # Unlock door if dependant object is completed
         if self.depends_on.is_completed() and self.current_state is self.available_states["locked"]:
             self.current_state = self.available_states["closed"]
-            # return True
 
         # Open unlocked door
         if self.current_state == self.available_states["closed"] and \
                 ((action == 1.).nonzero(as_tuple=True)[0]) == available_actions["open"]:
             self.current_state = self.available_states["open"]
             self.completed = True
-            return True
+            reward = 0.25
 
-        return False
+        # punish
+        else:
+            reward = -0.15
+
+        return reward
 
 
 class GameState:
@@ -190,23 +210,24 @@ class GameState:
 
         # Update puzzle it is in the selected grid space
         if self.selected_puzzle is not None:
-            if self.selected_puzzle.update_puzzle(action):
-                reward += 0.25  # Increase reward if puzzle succeeded with provided action
-                puzzle_position = self.selected_puzzle.get_position()
-                self.map[puzzle_position[0], puzzle_position[1]] = self.selected_puzzle.get_current_state()
+            reward = self.selected_puzzle.update_puzzle(action)
+            # reward += 0.25  # Increase reward if puzzle succeeded with provided action
+            puzzle_position = self.selected_puzzle.get_position()
+            self.map[puzzle_position[0], puzzle_position[1]] = self.selected_puzzle.get_current_state()
 
-                # Update dependants
-                depends_on = self.selected_puzzle.get_depends_on()
-                if depends_on:
-                    puzzle_position = depends_on.get_position()
-                    self.map[puzzle_position[0], puzzle_position[1]] = depends_on.get_current_state()
+            # Update dependants
+            depends_on = self.selected_puzzle.get_depends_on()
+            if depends_on:
+                puzzle_position = depends_on.get_position()
+                self.map[puzzle_position[0], puzzle_position[1]] = depends_on.get_current_state()
 
-                # Terminate if the terminal puzzle is reached and completed
-                if self.selected_puzzle is self.terminal_puzzle and self.selected_puzzle.is_completed():
-                    is_terminal = True
-                    reward = 1.
-            else:
-                reward -= 0.15
+            # Terminate if the terminal puzzle is reached and completed
+            if self.selected_puzzle is self.terminal_puzzle and self.selected_puzzle.is_completed():
+                is_terminal = True
+                reward = 1.
+
+            # else:
+            #     #reward -= 0.15
 
         # else:
         #     # Update puzzle pieces with action
@@ -329,7 +350,7 @@ class DQN(nn.Module):
         self.gamma = 0.99
         self.final_epsilon = 0.0001
         self.initial_epsilon = 0.1
-        self.num_iterations = 10000
+        self.num_iterations = 30000
         self.replay_memory_size = 500
         self.minibatch_size = 32
 
@@ -362,12 +383,14 @@ def train(model, start, losses, q_values, completions):
 
     # initialise the map!
     button = Button([1, 1])
-    door = Door([2, 2], button)
+    # pressure_plate = PressurePlate([2, 2], button)
+    door = Door([3, 3], button)
 
     game_state = GameState(4, 4)
     game_state.set_terminal_puzzle(door)
 
     game_state.add_puzzle(button)
+    # game_state.add_puzzle(pressure_plate)
     game_state.add_puzzle(door)
     # print(game_state.get_map())
     # print("\n")
@@ -581,5 +604,6 @@ def main(mode):
         else:
             plt.show(block=True)
 
-# if __name__ == "__main__":
-#     main(sys.argv[1])
+
+if __name__ == "__main__":
+    main(sys.argv[1])
