@@ -85,3 +85,8 @@ Content/StarterContent/*
 
 # Ignore PyCharm's .idea folder
 Content/Python/.idea/
+Content/Python/__pycache__/
+
+# Ignore MLs log
+Content/Python/output.txt
+
