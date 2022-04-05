@@ -8,7 +8,7 @@ import numpy as np
 
 
 class GameState:
-    available_actions = {"idle": 0., "move_up": 1., "move_down": 2., "move_left": 3., "move_right": 4.}
+    available_actions = {"idle": 0, "move_up": 1, "move_down": 2, "move_left": 3, "move_right": 4}
     """All available actions in the world"""
 
     def __init__(self, map_width, map_height):
@@ -16,14 +16,14 @@ class GameState:
         self.terminal_puzzle = None
         self.map_width = map_width
         self.map_height = map_height
-        self.map = np.full((map_width, map_height), -1.)
+        self.map = np.full((map_width, map_height), -1)
 
         self.current_grid_pos_x = 0
         self.current_grid_pos_y = 0
         self.selected_puzzle = None
 
     @staticmethod
-    def add_available_action_as_dict(action: dict[str, float]):
+    def add_available_action_as_dict(action: dict[str, int]):
         for key, val in action.items():
             if key not in GameState.available_actions.keys():
                 if val not in GameState.available_actions.values():
@@ -39,7 +39,7 @@ class GameState:
 
         # Find value for new action
         value = GameState.available_actions[max(GameState.available_actions, key=GameState.available_actions.get)]
-        value += 1.
+        value += 1
 
         GameState.available_actions.update({action: value})
 
@@ -48,11 +48,11 @@ class GameState:
         reward = 0.
 
         # Early-out idle action
-        if ((action == 1.).nonzero(as_tuple=True)[0]) == GameState.available_actions["idle"]:
+        if ((action == 1).nonzero(as_tuple=True)[0]) == GameState.available_actions["idle"]:
             return reward, is_terminal
 
         # Select grid
-        if ((action == 1.).nonzero(as_tuple=True)[0]) == GameState.available_actions["move_up"]:
+        if ((action == 1).nonzero(as_tuple=True)[0]) == GameState.available_actions["move_up"]:
             if self.current_grid_pos_y - 1 >= 0:
                 reward += 0.01
                 self.current_grid_pos_y -= 1
@@ -62,7 +62,7 @@ class GameState:
                 reward -= 0.5
             return reward, is_terminal
 
-        elif ((action == 1.).nonzero(as_tuple=True)[0]) == GameState.available_actions["move_down"]:
+        elif ((action == 1).nonzero(as_tuple=True)[0]) == GameState.available_actions["move_down"]:
             if self.current_grid_pos_y + 1 < self.map_height:
                 reward += 0.01
                 self.current_grid_pos_y += 1
@@ -72,7 +72,7 @@ class GameState:
                 reward -= 0.5
             return reward, is_terminal
 
-        elif ((action == 1.).nonzero(as_tuple=True)[0]) == GameState.available_actions["move_left"]:
+        elif ((action == 1).nonzero(as_tuple=True)[0]) == GameState.available_actions["move_left"]:
             if self.current_grid_pos_x - 1 >= 0:
                 reward += 0.01
                 self.current_grid_pos_x -= 1
@@ -82,7 +82,7 @@ class GameState:
                 reward -= 0.5
             return reward, is_terminal
 
-        elif ((action == 1.).nonzero(as_tuple=True)[0]) == GameState.available_actions["move_right"]:
+        elif ((action == 1).nonzero(as_tuple=True)[0]) == GameState.available_actions["move_right"]:
             if self.current_grid_pos_x + 1 < self.map_width:
                 reward += 0.01
                 self.current_grid_pos_x += 1
@@ -122,7 +122,7 @@ class GameState:
     def add_puzzle(self, puzzle):
         puzzle_x = puzzle.get_position()[0]
         puzzle_y = puzzle.get_position()[1]
-        self.map[puzzle_x, puzzle_y] = 0.
+        self.map[puzzle_x, puzzle_y] = 0
         self.puzzles.append(puzzle)
 
     def set_terminal_puzzle(self, puzzle):
@@ -141,8 +141,8 @@ class GameState:
         return self.puzzles
 
     def get_position_map(self):
-        position_map = np.full((self.map_width, self.map_height), 0.)
-        position_map[self.current_grid_pos_y, self.current_grid_pos_x] = 1.
+        position_map = np.full((self.map_width, self.map_height), 0)
+        position_map[self.current_grid_pos_y, self.current_grid_pos_x] = 1
         # print("\n --------- POSITION MAP ---------")
         # print(position_map)
         return position_map

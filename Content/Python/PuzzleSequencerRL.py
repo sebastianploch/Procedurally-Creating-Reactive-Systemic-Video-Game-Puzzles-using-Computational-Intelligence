@@ -87,8 +87,7 @@ transition = namedtuple("Transition", ("state", "action", "next_state", "reward"
 
 # ----------------------------- NEURAL NETWORK -----------------------------
 class DQN(nn.Module):
-
-    def __init__(self, num_actions=3):
+    def __init__(self, num_actions):
         super(DQN, self).__init__()
         self.num_actions = num_actions
         self.gamma = 0.99
@@ -132,7 +131,8 @@ def train(game_state, model, start, losses, q_values, completions):
         action = action.cuda()
 
     reward, terminal = game_state.step(action)
-    state = torch.cat((torch.tensor(game_state.get_map()), torch.tensor(game_state.get_position_map()))).unsqueeze(0)
+    state = torch.cat((torch.tensor(game_state.get_map(), dtype=torch.float64),
+                       torch.tensor(game_state.get_position_map(), dtype=torch.float64))).unsqueeze(0)
     # print("\n ------------- STATE ------------")
 
     if torch.cuda.is_available():
@@ -144,9 +144,10 @@ def train(game_state, model, start, losses, q_values, completions):
     epsilon_decrements = np.linspace(model.initial_epsilon, model.final_epsilon, model.num_iterations)
 
     while iteration < model.num_iterations:
-        output = model(torch.tensor(state).clone().detach())[0]
+        output = model(torch.tensor(state, dtype=torch.float64).clone().detach())[0]
 
-        action = torch.zeros([model.num_actions], dtype=torch.float64)  # initialise action
+        # initialise action
+        action = torch.zeros([model.num_actions], dtype=torch.float64)
         if torch.cuda.is_available():
             action = action.cuda()
 
@@ -160,12 +161,12 @@ def train(game_state, model, start, losses, q_values, completions):
         if torch.cuda.is_available():
             action_index = action_index.cuda()
 
-        action[action_index] = 1.
+        action[action_index] = 1
 
         reward, terminal = game_state.step(action)
         # state_ = game_state.get_map()
-        state_ = torch.cat((torch.tensor(game_state.get_map()),
-                            torch.tensor(game_state.get_position_map()))).unsqueeze(0)
+        state_ = torch.cat((torch.tensor(game_state.get_map(), dtype=torch.float64),
+                            torch.tensor(game_state.get_position_map(), dtype=torch.float64))).unsqueeze(0)
         if torch.cuda.is_available():
             state_ = state_.cuda()
 

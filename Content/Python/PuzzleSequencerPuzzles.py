@@ -3,7 +3,7 @@ import PuzzleSequencerGameState as PSGS
 
 class PuzzleObject:
     def __init__(self, position, available_states):
-        self.current_state = 0.
+        self.current_state = 0
         self.position = position
         self.available_states = available_states
         self.completed = False
@@ -31,7 +31,7 @@ class PuzzleObject:
 
 class Button(PuzzleObject):
     def __init__(self, position):
-        super().__init__(position, {"unpressed": 0., "pressed": 1.})
+        super().__init__(position, {"unpressed": 0, "pressed": 1})
         PSGS.GameState.add_available_action_as_key("press")
 
     def update_puzzle(self, action):
@@ -55,7 +55,7 @@ class Button(PuzzleObject):
 
 class PressurePlate(PuzzleObject):
     def __init__(self, position, depends_on):
-        super().__init__(position, {"de-activated": 0., "activated": 1.})
+        super().__init__(position, {"de-activated": 0, "activated": 1})
         PSGS.GameState.add_available_action_as_key("activate")
         self.depends_on = depends_on
 
@@ -80,7 +80,7 @@ class PressurePlate(PuzzleObject):
 
 class Door(PuzzleObject):
     def __init__(self, position, depends_on):
-        super().__init__(position, {"locked": 0., "closed": 1., "open": 2.})
+        super().__init__(position, {"locked": 0, "closed": 1, "open": 2})
         PSGS.GameState.add_available_action_as_key("open")
         self.depends_on = depends_on
 
