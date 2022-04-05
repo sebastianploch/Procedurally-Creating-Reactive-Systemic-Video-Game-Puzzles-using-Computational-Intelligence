@@ -164,7 +164,7 @@ def train(game_state, model, start, losses, q_values, completions):
         action[action_index] = 1
 
         reward, terminal = game_state.step(action)
-        # state_ = game_state.get_map()
+
         state_ = torch.cat((torch.tensor(game_state.get_map(), dtype=torch.float32),
                             torch.tensor(game_state.get_position_map(), dtype=torch.float32))).unsqueeze(0)
         if torch.cuda.is_available():
