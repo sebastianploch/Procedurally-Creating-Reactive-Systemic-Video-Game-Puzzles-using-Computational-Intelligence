@@ -7,6 +7,7 @@ import os
 import random
 import sys
 import time
+import logging
 from collections import namedtuple, deque
 from itertools import count
 
@@ -146,8 +147,9 @@ def train(game_state, model, start, losses, q_values, completions):
         action = torch.zeros([model.num_actions], dtype=torch.float32, device=device)
 
         random_action = random.random() <= epsilon
+        is_random = False
         if random_action:
-            print("picked random action :)")
+            is_random = True
         action_index = [torch.randint(model.num_actions, torch.Size([]), dtype=torch.int32, device=device)
                         if random_action
                         else torch.argmax(output)][0]
@@ -206,9 +208,14 @@ def train(game_state, model, start, losses, q_values, completions):
         # if iteration % 50 == 0:
         #     torch.save(model, "pretrained_model/current_model_" + str(iteration) + ".pth")
 
-        print("iteration:", iteration, "elapsed time:", time.time() - start, "epsilon:", epsilon, "action:",
-              action_index.cpu().detach().numpy(), "reward:", reward.cpu().detach().numpy()[0][0], "Q max:",
-              np.max(output.cpu().detach().numpy()))
+        output_msg = f"Iteration:{iteration} \
+        Elapsed Time:{time.time() - start:.5f} \
+        Epsilon:{epsilon:.5} \
+        Action:{action_index.cpu().detach().numpy()} \
+        Reward:{reward.cpu().detach().numpy()[0][0]:.5f} \
+        Q Max:{np.max(output.cpu().detach().numpy()):.8f} \
+        Random:{is_random}"
+        logging.info(output_msg)
 
         if terminal:
             completions.append(iteration)
@@ -269,9 +276,9 @@ def initialise_game_state():
     # game_state.add_puzzle(pressure_plate)
     game_state.add_puzzle(door)
 
-    print("Available actions for the game state:")
-    print(PSGS.GameState.available_actions)
-    print("\n")
+    # print("Available actions for the game state:")
+    # print(PSGS.GameState.available_actions)
+    # print("\n")
     return game_state
 
 
@@ -308,6 +315,7 @@ def plot(losses, q_values, completions):
 
 
 def main(mode):
+    logging.basicConfig(filename='output.txt', level=logging.INFO, format='', filemode='w')
     cuda_is_available = torch.cuda.is_available()
 
     if mode == 'test':
@@ -325,8 +333,8 @@ def main(mode):
         game_state = initialise_game_state()
 
         model = DQN(len(PSGS.GameState.available_actions)).to(device)
-
         model.apply(init_weights)
+
         start = time.time()
         losses = []
         q_values = []

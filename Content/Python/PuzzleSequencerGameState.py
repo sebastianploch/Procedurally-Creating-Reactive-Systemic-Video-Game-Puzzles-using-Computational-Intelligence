@@ -56,7 +56,6 @@ class GameState:
             if self.current_grid_pos_y - 1 >= 0:
                 reward += 0.01
                 self.current_grid_pos_y -= 1
-                print(f"current grid pos X: {self.current_grid_pos_x} Y: {self.current_grid_pos_y}\n")
                 self.update_selected_puzzle()
             else:
                 reward -= 0.5
@@ -66,7 +65,6 @@ class GameState:
             if self.current_grid_pos_y + 1 < self.map_height:
                 reward += 0.01
                 self.current_grid_pos_y += 1
-                print(f"current grid pos X: {self.current_grid_pos_x} Y: {self.current_grid_pos_y}\n")
                 self.update_selected_puzzle()
             else:
                 reward -= 0.5
@@ -76,7 +74,6 @@ class GameState:
             if self.current_grid_pos_x - 1 >= 0:
                 reward += 0.01
                 self.current_grid_pos_x -= 1
-                print(f"current grid pos X: {self.current_grid_pos_x} Y: {self.current_grid_pos_y}\n")
                 self.update_selected_puzzle()
             else:
                 reward -= 0.5
@@ -86,7 +83,6 @@ class GameState:
             if self.current_grid_pos_x + 1 < self.map_width:
                 reward += 0.01
                 self.current_grid_pos_x += 1
-                print(f"current grid pos X: {self.current_grid_pos_x} Y: {self.current_grid_pos_y}\n")
                 self.update_selected_puzzle()
             else:
                 reward -= 0.5
@@ -109,7 +105,6 @@ class GameState:
                 is_terminal = True
                 reward = 1.
 
-        print(f"action: {action}, reward: {reward}, terminal: {is_terminal}")
         return reward, is_terminal
 
     def update_selected_puzzle(self):
