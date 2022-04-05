@@ -115,7 +115,7 @@ class DQN(nn.Module):
 
 def init_weights(m):
     if type(m) == nn.Conv2d or type(m) == nn.Linear:
-        torch.nn.init.uniform(m.weight, -0.01, 0.01)
+        torch.nn.init.uniform_(m.weight, -0.01, 0.01)
         m.bias.data.fill_(0.01)
 
 
