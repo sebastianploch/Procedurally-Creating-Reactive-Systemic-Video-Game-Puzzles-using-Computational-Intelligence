@@ -48,39 +48,39 @@ transition = namedtuple("Transition", ("state", "action", "next_state", "reward"
 # game_state.set_terminal_puzzle(door)
 # print(game_state.get_map())
 #
-# action = torch.zeros([len(available_actions)], dtype=torch.float64)
+# action = torch.zeros([len(available_actions)], dtype=torch.float32)
 # action[int(available_actions["move_down"])] = 1.  # move down
 # game_state.step(action)
 #
-# action = torch.zeros([len(available_actions)], dtype=torch.float64)
+# action = torch.zeros([len(available_actions)], dtype=torch.float32)
 # action[int(available_actions["move_right"])] = 1.  # move down
 # game_state.step(action)
 #
-# action = torch.zeros([len(available_actions)], dtype=torch.float64)
+# action = torch.zeros([len(available_actions)], dtype=torch.float32)
 # action[int(available_actions["press"])] = 1.  # move down
 # game_state.step(action)
 #
-# action = torch.zeros([len(available_actions)], dtype=torch.float64)
+# action = torch.zeros([len(available_actions)], dtype=torch.float32)
 # action[int(available_actions["move_down"])] = 1.  # move down
 # game_state.step(action)
 #
-# action = torch.zeros([len(available_actions)], dtype=torch.float64)
+# action = torch.zeros([len(available_actions)], dtype=torch.float32)
 # action[int(available_actions["move_right"])] = 1.  # move down
 # game_state.step(action)
 #
-# # action = torch.zeros([len(available_actions)], dtype=torch.float64)
+# # action = torch.zeros([len(available_actions)], dtype=torch.float32)
 # # action[int(available_actions["activate"])] = 1.  # move down
 # # game_state.step(action)
 #
-# action = torch.zeros([len(available_actions)], dtype=torch.float64)
+# action = torch.zeros([len(available_actions)], dtype=torch.float32)
 # action[int(available_actions["move_down"])] = 1.  # move down
 # game_state.step(action)
 #
-# action = torch.zeros([len(available_actions)], dtype=torch.float64)
+# action = torch.zeros([len(available_actions)], dtype=torch.float32)
 # action[int(available_actions["move_right"])] = 1.  # move down
 # game_state.step(action)
 #
-# action = torch.zeros([len(available_actions)], dtype=torch.float64)
+# action = torch.zeros([len(available_actions)], dtype=torch.float32)
 # action[int(available_actions["open"])] = 1.  # move down
 # game_state.step(action)
 
@@ -97,11 +97,11 @@ class DQN(nn.Module):
         self.replay_memory_size = 500
         self.minibatch_size = 32
 
-        self.layer1 = nn.Linear(4, 32, dtype=torch.float64)
+        self.layer1 = nn.Linear(4, 32, dtype=torch.float32)
         self.relu1 = nn.ReLU(inplace=True)
-        self.layer2 = nn.Linear(256, 512, dtype=torch.float64)
+        self.layer2 = nn.Linear(256, 512, dtype=torch.float32)
         self.relu2 = nn.ReLU(inplace=True)
-        self.layer3 = nn.Linear(512, self.num_actions, dtype=torch.float64)
+        self.layer3 = nn.Linear(512, self.num_actions, dtype=torch.float32)
 
     def forward(self, x):
         out = self.layer1(x)
@@ -125,14 +125,14 @@ def train(game_state, model, start, losses, q_values, completions):
     replay_memory = []
 
     # Pick action
-    action = torch.zeros([model.num_actions], dtype=torch.float64)
+    action = torch.zeros([model.num_actions], dtype=torch.float32)
     action[0] = 1
     if torch.cuda.is_available():
         action = action.cuda()
 
     reward, terminal = game_state.step(action)
-    state = torch.cat((torch.tensor(game_state.get_map(), dtype=torch.float64),
-                       torch.tensor(game_state.get_position_map(), dtype=torch.float64))).unsqueeze(0)
+    state = torch.cat((torch.tensor(game_state.get_map(), dtype=torch.float32),
+                       torch.tensor(game_state.get_position_map(), dtype=torch.float32))).unsqueeze(0)
     # print("\n ------------- STATE ------------")
 
     if torch.cuda.is_available():
@@ -144,10 +144,10 @@ def train(game_state, model, start, losses, q_values, completions):
     epsilon_decrements = np.linspace(model.initial_epsilon, model.final_epsilon, model.num_iterations)
 
     while iteration < model.num_iterations:
-        output = model(torch.tensor(state, dtype=torch.float64).clone().detach())[0]
+        output = model(torch.tensor(state, dtype=torch.float32).clone().detach())[0]
 
         # initialise action
-        action = torch.zeros([model.num_actions], dtype=torch.float64)
+        action = torch.zeros([model.num_actions], dtype=torch.float32)
         if torch.cuda.is_available():
             action = action.cuda()
 
@@ -165,13 +165,13 @@ def train(game_state, model, start, losses, q_values, completions):
 
         reward, terminal = game_state.step(action)
         # state_ = game_state.get_map()
-        state_ = torch.cat((torch.tensor(game_state.get_map(), dtype=torch.float64),
-                            torch.tensor(game_state.get_position_map(), dtype=torch.float64))).unsqueeze(0)
+        state_ = torch.cat((torch.tensor(game_state.get_map(), dtype=torch.float32),
+                            torch.tensor(game_state.get_position_map(), dtype=torch.float32))).unsqueeze(0)
         if torch.cuda.is_available():
             state_ = state_.cuda()
 
         action = action.unsqueeze(0)
-        reward = torch.from_numpy(np.array([reward], dtype=np.float64)).unsqueeze(0)
+        reward = torch.from_numpy(np.array([reward], dtype=np.float32)).unsqueeze(0)
 
         replay_memory.append((state, action, reward, state_, terminal))
 
@@ -244,7 +244,7 @@ def test(model):
     game_state = GameState([button, door], door)
 
     # TODO should this be a tensor instead? like in the tutorial
-    # action = torch.zeros([model.num_actions], dtype=torch.float64)
+    # action = torch.zeros([model.num_actions], dtype=torch.float32)
     # action[0] = 0
     action = 0
     reward, terminal = game_state.step(action)
@@ -253,7 +253,7 @@ def test(model):
     while True:
         output = model(state)[0]
 
-        action = torch.zeros([model.num_actions], dtype=torch.float64)
+        action = torch.zeros([model.num_actions], dtype=torch.float32)
         if torch.cuda.is_available():
             action = action.cuda()
 
