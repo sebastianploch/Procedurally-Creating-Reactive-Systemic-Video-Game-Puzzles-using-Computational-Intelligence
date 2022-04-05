@@ -213,7 +213,7 @@ def train(game_state, model, start, losses, q_values, completions):
         Epsilon:{epsilon:.5} \
         Action:{action_index.cpu().detach().numpy()} \
         Reward:{reward.cpu().detach().numpy()[0][0]:.5f} \
-        Q Max:{np.max(output.cpu().detach().numpy()):.8f} \
+        Q Max:{np.max(output.cpu().detach().numpy())} \
         Random:{is_random}"
         logging.info(output_msg)
 
