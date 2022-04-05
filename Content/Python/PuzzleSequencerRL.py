@@ -131,10 +131,10 @@ def train(game_state, model, start, losses, q_values, completions):
         action = action.cuda()
 
     reward, terminal = game_state.step(action)
+
+    # Create total game state from game state's map and map position
     state = torch.cat((torch.tensor(game_state.get_map(), dtype=torch.float32),
                        torch.tensor(game_state.get_position_map(), dtype=torch.float32))).unsqueeze(0)
-    # print("\n ------------- STATE ------------")
-
     if torch.cuda.is_available():
         state = state.cuda()
 
@@ -144,7 +144,7 @@ def train(game_state, model, start, losses, q_values, completions):
     epsilon_decrements = np.linspace(model.initial_epsilon, model.final_epsilon, model.num_iterations)
 
     while iteration < model.num_iterations:
-        output = model(torch.tensor(state, dtype=torch.float32).clone().detach())[0]
+        output = model(state.clone().detach())[0]
 
         # initialise action
         action = torch.zeros([model.num_actions], dtype=torch.float32)
@@ -232,8 +232,8 @@ def train(game_state, model, start, losses, q_values, completions):
             game_state = initialise_game_state()
 
             # get state
-            state = torch.cat((torch.tensor(game_state.get_map()),
-                               torch.tensor(game_state.get_position_map()))).unsqueeze(0)
+            state = torch.cat((torch.tensor(game_state.get_map(), dtype=torch.float32),
+                               torch.tensor(game_state.get_position_map(), dtype=torch.float32))).unsqueeze(0)
             if torch.cuda.is_available():
                 state = state.cuda()
 
