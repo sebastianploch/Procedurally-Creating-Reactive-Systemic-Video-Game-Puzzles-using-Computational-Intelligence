@@ -28,7 +28,7 @@ if is_ipython:
 plt.ion()
 
 # check if CUDA is available otherwise run on CPU
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = "cuda" if torch.cuda.is_available() else "cpu"
 
 # Define transitions
 transition = namedtuple("Transition", ("state", "action", "next_state", "reward"))
@@ -125,18 +125,14 @@ def train(game_state, model, start, losses, q_values, completions):
     replay_memory = []
 
     # Pick action
-    action = torch.zeros([model.num_actions], dtype=torch.float32)
+    action = torch.zeros([model.num_actions], dtype=torch.float32, device=device)
     action[0] = 1
-    if torch.cuda.is_available():
-        action = action.cuda()
 
     reward, terminal = game_state.step(action)
 
     # Create total game state from game state's map and map position
-    state = torch.cat((torch.tensor(game_state.get_map(), dtype=torch.float32),
-                       torch.tensor(game_state.get_position_map(), dtype=torch.float32))).unsqueeze(0)
-    if torch.cuda.is_available():
-        state = state.cuda()
+    state = torch.cat((torch.tensor(game_state.get_map(), dtype=torch.float32, device=device),
+                       torch.tensor(game_state.get_position_map(), dtype=torch.float32, device=device))).unsqueeze(0)
 
     epsilon = model.initial_epsilon
     iteration = 0
@@ -147,31 +143,26 @@ def train(game_state, model, start, losses, q_values, completions):
         output = model(state.clone().detach())[0]
 
         # initialise action
-        action = torch.zeros([model.num_actions], dtype=torch.float32)
-        if torch.cuda.is_available():
-            action = action.cuda()
+        action = torch.zeros([model.num_actions], dtype=torch.float32, device=device)
 
         random_action = random.random() <= epsilon
         if random_action:
             print("picked random action :)")
-        action_index = [torch.randint(model.num_actions, torch.Size([]), dtype=torch.int32)
+        action_index = [torch.randint(model.num_actions, torch.Size([]), dtype=torch.int32, device=device)
                         if random_action
                         else torch.argmax(output)][0]
-
-        if torch.cuda.is_available():
-            action_index = action_index.cuda()
 
         action[action_index] = 1
 
         reward, terminal = game_state.step(action)
 
-        state_ = torch.cat((torch.tensor(game_state.get_map(), dtype=torch.float32),
-                            torch.tensor(game_state.get_position_map(), dtype=torch.float32))).unsqueeze(0)
-        if torch.cuda.is_available():
-            state_ = state_.cuda()
+        state_ = torch.cat((torch.tensor(game_state.get_map(), dtype=torch.float32, device=device),
+                            torch.tensor(game_state.get_position_map(), dtype=torch.float32, device=device))).unsqueeze(
+            0)
 
         action = action.unsqueeze(0)
-        reward = torch.from_numpy(np.array([reward], dtype=np.float32)).unsqueeze(0)
+
+        reward = torch.tensor([[reward]], dtype=torch.float32, device=device)
 
         replay_memory.append((state, action, reward, state_, terminal))
 
@@ -186,12 +177,6 @@ def train(game_state, model, start, losses, q_values, completions):
         action_batch = torch.cat(tuple(d[1] for d in minibatch))
         reward_batch = torch.cat(tuple(d[2] for d in minibatch))
         state__batch = torch.cat(tuple(d[3] for d in minibatch))
-
-        if torch.cuda.is_available():
-            state_batch = state_batch.cuda()
-            action_batch = action_batch.cuda()
-            reward_batch = reward_batch.cuda()
-            state__batch = state__batch.cuda()
 
         output__batch = model(state__batch)  # get output for the next state
 
@@ -222,7 +207,7 @@ def train(game_state, model, start, losses, q_values, completions):
         #     torch.save(model, "pretrained_model/current_model_" + str(iteration) + ".pth")
 
         print("iteration:", iteration, "elapsed time:", time.time() - start, "epsilon:", epsilon, "action:",
-              action_index.cpu().detach().numpy(), "reward:", reward.numpy()[0][0], "Q max:",
+              action_index.cpu().detach().numpy(), "reward:", reward.cpu().detach().numpy()[0][0], "Q max:",
               np.max(output.cpu().detach().numpy()))
 
         if terminal:
@@ -232,10 +217,9 @@ def train(game_state, model, start, losses, q_values, completions):
             game_state = initialise_game_state()
 
             # get state
-            state = torch.cat((torch.tensor(game_state.get_map(), dtype=torch.float32),
-                               torch.tensor(game_state.get_position_map(), dtype=torch.float32))).unsqueeze(0)
-            if torch.cuda.is_available():
-                state = state.cuda()
+            state = torch.cat((torch.tensor(game_state.get_map(), dtype=torch.float32, device=device),
+                               torch.tensor(game_state.get_position_map(), dtype=torch.float32,
+                                            device=device))).unsqueeze(0)
 
 
 def test(model):
@@ -330,10 +314,7 @@ def main(mode):
         model = torch.load(
             'pretrained_model/current_model_300.pth',
             map_location='cpu' if not cuda_is_available else None
-        ).eval()
-
-        if cuda_is_available:  # put on GPU if CUDA is available
-            model = model.cuda()
+        ).eval().to(device)
 
         test(model)
 
@@ -343,9 +324,7 @@ def main(mode):
 
         game_state = initialise_game_state()
 
-        model = DQN(len(PSGS.GameState.available_actions))
-        if cuda_is_available:
-            model = model.cuda()
+        model = DQN(len(PSGS.GameState.available_actions)).to(device)
 
         model.apply(init_weights)
         start = time.time()
