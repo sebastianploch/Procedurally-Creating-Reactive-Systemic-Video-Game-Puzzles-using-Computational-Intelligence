@@ -48,11 +48,11 @@ class GameState:
         reward = 0.
 
         # Early-out idle action
-        if ((action == 1).nonzero(as_tuple=True)[0]) == GameState.available_actions["idle"]:
+        if action == GameState.available_actions["idle"]:
             return reward, is_terminal
 
         # Select grid
-        if ((action == 1).nonzero(as_tuple=True)[0]) == GameState.available_actions["move_up"]:
+        if action == GameState.available_actions["move_up"]:
             if self.current_grid_pos_y - 1 >= 0:
                 reward += 0.01
                 self.current_grid_pos_y -= 1
@@ -61,7 +61,7 @@ class GameState:
                 reward -= 0.5
             return reward, is_terminal
 
-        elif ((action == 1).nonzero(as_tuple=True)[0]) == GameState.available_actions["move_down"]:
+        elif action == GameState.available_actions["move_down"]:
             if self.current_grid_pos_y + 1 < self.map_height:
                 reward += 0.01
                 self.current_grid_pos_y += 1
@@ -70,7 +70,7 @@ class GameState:
                 reward -= 0.5
             return reward, is_terminal
 
-        elif ((action == 1).nonzero(as_tuple=True)[0]) == GameState.available_actions["move_left"]:
+        elif action == GameState.available_actions["move_left"]:
             if self.current_grid_pos_x - 1 >= 0:
                 reward += 0.01
                 self.current_grid_pos_x -= 1
@@ -79,7 +79,7 @@ class GameState:
                 reward -= 0.5
             return reward, is_terminal
 
-        elif ((action == 1).nonzero(as_tuple=True)[0]) == GameState.available_actions["move_right"]:
+        elif action == GameState.available_actions["move_right"]:
             if self.current_grid_pos_x + 1 < self.map_width:
                 reward += 0.01
                 self.current_grid_pos_x += 1

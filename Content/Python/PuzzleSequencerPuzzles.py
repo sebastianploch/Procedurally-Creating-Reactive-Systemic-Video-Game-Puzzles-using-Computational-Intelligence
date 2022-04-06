@@ -41,7 +41,7 @@ class Button(PuzzleObject):
             return reward
 
         # checking the one hot encoding
-        if ((action == 1.).nonzero(as_tuple=True)[0]) == PSGS.GameState.available_actions["press"]:
+        if action == PSGS.GameState.available_actions["press"]:
             self.current_state = self.available_states["pressed"]
             self.completed = True
             reward = 0.25
@@ -65,8 +65,7 @@ class PressurePlate(PuzzleObject):
         if self.completed:
             return reward
 
-        if self.depends_on.is_completed() and \
-                ((action == 1.).nonzero(as_tuple=True)[0]) == PSGS.GameState.available_actions["activate"]:
+        if self.depends_on.is_completed() and action == PSGS.GameState.available_actions["activate"]:
             self.current_state = self.available_states["activated"]
             self.completed = True
             reward = 0.25
@@ -96,8 +95,7 @@ class Door(PuzzleObject):
             self.current_state = self.available_states["closed"]
 
         # Open unlocked door
-        if self.current_state == self.available_states["closed"] and \
-                ((action == 1.).nonzero(as_tuple=True)[0]) == PSGS.GameState.available_actions["open"]:
+        if self.current_state == self.available_states["closed"] and action == PSGS.GameState.available_actions["open"]:
             self.current_state = self.available_states["open"]
             self.completed = True
             reward = 0.25
