@@ -94,9 +94,19 @@ class DQN(nn.Module):
         self.gamma = 0.99
         self.final_epsilon = 0.0001
         self.initial_epsilon = 0.1
-        self.num_iterations = 30000
-        self.replay_memory_size = 500
+        self.num_iterations = 50000
+        self.replay_memory_size = 10000
         self.minibatch_size = 32
+
+        # self.conv1 = nn.Conv2d(4, 32, 8, 4)
+        # self.relu1 = nn.ReLU(inplace=True)
+        # self.conv2 = nn.Conv2d(32, 64, 4, 2)
+        # self.relu2 = nn.ReLU(inplace=True)
+        # self.conv3 = nn.Conv2d(64, 64, 3, 1)
+        # self.relu3 = nn.ReLU(inplace=True)
+        # self.fc4 = nn.Linear(3136, 512)
+        # self.relu4 = nn.ReLU(inplace=True)
+        # self.fc5 = nn.Linear(512, self.number_of_actions)
 
         self.layer1 = nn.Linear(4, 32, dtype=torch.float32)
         self.relu1 = nn.ReLU(inplace=True)
@@ -105,9 +115,21 @@ class DQN(nn.Module):
         self.layer3 = nn.Linear(512, self.num_actions, dtype=torch.float32)
 
     def forward(self, x):
-        out = self.layer1(x)
+        # out = self.conv1(x)
+        # out = self.relu1(out)
+        # out = self.conv2(out)
+        # out = self.relu2(out)
+        # out = self.conv3(out)
+        # out = self.relu3(out)
+        # out = out.view(out.size()[0], -1)
+        # out = self.fc4(out)
+        # out = self.relu4(out)
+        # out = self.fc5(out)
+
+        out = x.view(x.size()[0], -1)
+        out = self.layer1(out)
         out = self.relu1(out)
-        out = out.view(out.size()[0], -1)
+
         out = self.layer2(out)
         out = self.relu2(out)
         out = self.layer3(out)
@@ -205,8 +227,8 @@ def train(game_state, model, start, losses, q_values, completions):
         iteration += 1
 
         # TODO: Uncomment once want saving
-        # if iteration % 50 == 0:
-        #     torch.save(model, "pretrained_model/current_model_" + str(iteration) + ".pth")
+        if iteration % 5000 == 0:
+            torch.save(model, "pretrained_model/current_model_" + str(iteration) + ".pth")
 
         output_msg = f"Iteration:{iteration} \
         Elapsed Time:{time.time() - start:.5f} \
@@ -218,6 +240,8 @@ def train(game_state, model, start, losses, q_values, completions):
         logging.info(output_msg)
 
         if terminal:
+            torch.save(model, "pretrained_model/current_model_test" + str(iteration) + ".pth")
+
             completions.append(iteration)
 
             # re-initialise the map!
@@ -230,34 +254,38 @@ def train(game_state, model, start, losses, q_values, completions):
 
 
 def test(model):
-    button = Button()
-    door = Door(button)
-    game_state = GameState([button, door], door)
+    game_state = initialise_game_state()
+    print(game_state.get_map())
 
-    # TODO should this be a tensor instead? like in the tutorial
-    # action = torch.zeros([model.num_actions], dtype=torch.float32)
-    # action[0] = 0
-    action = 0
+    action = torch.zeros([model.num_actions], dtype=torch.float32, device=device)
+    action[0] = 1
+
     reward, terminal = game_state.step(action)
-    state = game_state.get_map()
+    state = torch.cat((torch.tensor(game_state.get_map(), dtype=torch.float32, device=device),
+                       torch.tensor(game_state.get_position_map(), dtype=torch.float32, device=device))).unsqueeze(0)
 
     while True:
         output = model(state)[0]
+        print(f"Output:{output.cpu().detach().numpy()}")
 
-        action = torch.zeros([model.num_actions], dtype=torch.float32)
-        if torch.cuda.is_available():
-            action = action.cuda()
+        action = torch.zeros([model.num_actions], dtype=torch.float32, device=device)
 
-        action_index = torch.argmax(output)
-        if torch.cuda.is_available():
-            action_index = action_index.cuda()
-        action[action_index] = 0
+        # get action
+        action_index = torch.argmax(output).to(device)
+        action[action_index] = 1
 
-        # TODO determine next state and reward :D (the cool stuffz)
+        # get next state
         reward, terminal = game_state.step(action)
-        state_ = game_state.get_map()
+        state_ = torch.cat((torch.tensor(game_state.get_map(), dtype=torch.float32, device=device),
+                            torch.tensor(game_state.get_position_map(), dtype=torch.float32, device=device))).unsqueeze(
+            0)
 
-        state = state_  # TODO do we need to break at some point? lol the git code doesn't for some reason
+        state = state_
+
+        print(f"Action:{action.cpu().detach().numpy()}")
+
+        if terminal:
+            print("Finished Game!")
 
 
 def initialise_game_state():
@@ -265,7 +293,7 @@ def initialise_game_state():
 
     # Init puzzles
     button = PSP.Button([1, 1])
-    # pressure_plate = PressurePlate([2, 2], button)
+    # pressure_plate = PSP.PressurePlate([2, 2], button)
     door = PSP.Door([3, 3], button)
 
     # Set terminal puzzle
@@ -276,9 +304,9 @@ def initialise_game_state():
     # game_state.add_puzzle(pressure_plate)
     game_state.add_puzzle(door)
 
-    # print("Available actions for the game state:")
-    # print(PSGS.GameState.available_actions)
-    # print("\n")
+    print("Available actions for the game state:")
+    print(PSGS.GameState.available_actions)
+    print("\n")
     return game_state
 
 
@@ -320,7 +348,7 @@ def main(mode):
 
     if mode == 'test':
         model = torch.load(
-            'pretrained_model/current_model_300.pth',
+            'pretrained_model/current_model_test6176.pth',
             map_location='cpu' if not cuda_is_available else None
         ).eval().to(device)
 
