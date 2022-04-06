@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 
 
@@ -126,18 +128,19 @@ class GameState:
     def get_terminal_puzzle(self):
         return self.terminal_puzzle
 
+    def get_puzzles(self):
+        return self.puzzles
+
     def get_map(self):
         return self.map
 
     def get_map_size(self):
         return self.map_width * self.map_height
 
-    def get_puzzles(self):
-        return self.puzzles
-
     def get_position_map(self):
         position_map = np.full((self.map_width, self.map_height), 0)
         position_map[self.current_grid_pos_y, self.current_grid_pos_x] = 1
-        # print("\n --------- POSITION MAP ---------")
-        # print(position_map)
         return position_map
+
+    def get_map_state(self):
+        return np.array([self.get_map(), self.get_position_map()], dtype=np.float32).ravel()

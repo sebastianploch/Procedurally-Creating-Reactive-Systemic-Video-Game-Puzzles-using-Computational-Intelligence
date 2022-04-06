@@ -62,17 +62,17 @@ class PressurePlate(PuzzleObject):
     def update_puzzle(self, action):
         reward = 0.
 
-        if self.completed:
-            return reward
+        # if self.completed:
+        #     return reward
 
         if self.depends_on.is_completed() and action == PSGS.GameState.available_actions["activate"]:
             self.current_state = self.available_states["activated"]
             self.completed = True
-            reward = 0.25
+            # reward = 0.25
 
-        # punish
-        else:
-            reward = -0.15
+        # # punish
+        # else:
+        #     reward = -0.15
 
         return reward
 
