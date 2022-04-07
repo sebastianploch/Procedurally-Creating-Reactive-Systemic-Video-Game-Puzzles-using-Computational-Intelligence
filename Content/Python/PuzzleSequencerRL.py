@@ -222,7 +222,7 @@ def train():
 
 # ------------------------------------- PLOT -------------------------------------
 def plot_learning(x, scores, epsilons, filename):
-    fig = plt.figure()
+    fig = plt.figure(figsize=(15, 10), dpi=100)
     ax = fig.add_subplot(111, label="Epsilon")
     ax2 = fig.add_subplot(111, label="Score", frame_on=False)
 
@@ -260,7 +260,7 @@ def plot_learning(x, scores, epsilons, filename):
     # Attach legend on top of graph
     fig.legend(loc="upper center", ncol=2)
     fig.tight_layout()
-    fig.subplots_adjust(top=0.85)
+    fig.subplots_adjust(top=0.90)
 
     # Save graph
     save_path = os.path.dirname(os.path.abspath(__file__)) + "/Graphs/"
