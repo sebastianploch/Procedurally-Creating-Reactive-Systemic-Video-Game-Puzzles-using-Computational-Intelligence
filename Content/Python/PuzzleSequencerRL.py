@@ -142,15 +142,15 @@ def initialise_game_state():
 
     # Init puzzles
     button = PSP.Button([1, 1])
-    pressure_plate = PSP.PressurePlate([2, 2], button)
-    door = PSP.Door([3, 3], pressure_plate)
+    # pressure_plate = PSP.PressurePlate([2, 2], button)
+    door = PSP.Door([3, 3], button)
 
     # Set terminal puzzle
     game_state.set_terminal_puzzle(door)
 
     # Add puzzles to game state
     game_state.add_puzzle(button)
-    game_state.add_puzzle(pressure_plate)
+    # game_state.add_puzzle(pressure_plate)
     game_state.add_puzzle(door)
 
     # print("Available actions for the game state:")
@@ -170,7 +170,7 @@ def train():
     initialise_logging(agent, n_games)
 
     total_iterations = 0
-    scores, epsilon_history = [], []
+    scores, average_scores, epsilon_history = [], [], []
 
     for i in range(n_games):
         score = 0
@@ -195,7 +195,9 @@ def train():
         # Collect episode data
         scores.append(score)
         epsilon_history.append(agent.epsilon)
+
         average_score = np.mean(scores[-10:])
+        average_scores.append(average_score)
 
         logging.info(f"Episode: {i} \
         Score: {score:.2f} \
@@ -219,39 +221,74 @@ def train():
 
 
 # ------------------------------------- PLOT -------------------------------------
-def plot_learning(x, scores, epsilons, filename, lines=None):
+def plot_learning(x, scores, epsilons, filename):
     fig = plt.figure()
-    ax = fig.add_subplot(111, label="1")
-    ax2 = fig.add_subplot(111, label="2", frame_on=False)
+    ax = fig.add_subplot(111, label="Epsilon")
+    ax2 = fig.add_subplot(111, label="Score", frame_on=False)
 
-    ax.plot(x, epsilons, color="C0")
-    ax.set_xlabel("Episode", color="C0")
-    ax.set_ylabel("Epsilon", color="C0")
-    ax.tick_params(axis='x', colors="C0")
-    ax.tick_params(axis='y', colors="C0")
+    # Plot Epsilon
+    ax.plot(x, epsilons, color='C0', label="Epsilon", linestyle='--', markerfacecolor="C0")
+    ax.set_xlabel("Episode")
+    ax.set_ylabel("Epsilon", color='C0')
+    ax.tick_params(axis='y', color='C0')
+    ax.spines['left'].set_color('C0')
 
+    # averaging window
+    window = 20
+
+    # Running average
     N = len(scores)
     running_avg = np.empty(N)
     for t in range(N):
-        running_avg[t] = np.mean(scores[max(0, t - 20):(t + 1)])
+        running_avg[t] = np.mean(scores[max(0, t - window):(t + 1)])
 
-    ax2.scatter(x, running_avg, color="C1")
+    # Exponential Moving Average
+    ema = numpy_ewma_vectorized_v2(np.array(scores), window)
+
+    # Plot running and exponential average + raw score
+    ax2.plot(x, running_avg, color='orange', linestyle='solid', marker='o', markerfacecolor='orange', markersize=8,
+             label="Running Average Score")
+    ax2.plot(x, ema, color='green', linestyle='solid', marker='o', markerfacecolor='green', markersize=8,
+             label="Exponential Moving Average Score")
+    ax2.plot(x, scores, color='red', linestyle='solid', marker='o', markerfacecolor='red', markersize=8,
+             label="Raw Score")
     ax2.axes.get_xaxis().set_visible(False)
     ax2.yaxis.tick_right()
-    ax2.set_ylabel('Score', color="C1")
     ax2.yaxis.set_label_position('right')
-    ax2.tick_params(axis='y', colors="C1")
+    ax2.set_ylabel("Score")
 
-    if lines is not None:
-        for line in lines:
-            plt.axvline(x=line)
+    # Attach legend on top of graph
+    fig.legend(loc="upper center", ncol=2)
+    fig.tight_layout()
+    fig.subplots_adjust(top=0.85)
 
+    # Save graph
     save_path = os.path.dirname(os.path.abspath(__file__)) + "/Graphs/"
     if not os.path.exists(save_path):
         os.makedirs("Graphs")
 
-    plt.savefig(save_path + filename)
+    plt.savefig(save_path + filename, bbox_inches="tight", dpi=100)
+
+    # Show Graph
     plt.show(block=True)
+
+
+# https://localcoder.org/numpy-version-of-exponential-weighted-moving-average-equivalent-to-pandas-ewm
+def numpy_ewma_vectorized_v2(data, window):
+    alpha = 2 / (window + 1.0)
+    alpha_rev = 1 - alpha
+    n = data.shape[0]
+
+    pows = alpha_rev ** (np.arange(n + 1))
+
+    scale_arr = 1 / pows[:-1]
+    offset = data[0] * pows[1:]
+    pw0 = alpha * alpha_rev ** (n - 1)
+
+    mult = data * pw0 * scale_arr
+    cumsums = mult.cumsum()
+    out = offset + cumsums * scale_arr[::-1]
+    return out
 
 
 # ------------------------------------- LOGGING ----------------------------------
