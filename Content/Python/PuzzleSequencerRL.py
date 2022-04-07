@@ -1,4 +1,5 @@
 import os.path
+import shutil
 
 import PuzzleSequencerGameState as PSGS
 import PuzzleSequencerPuzzles as PSP
@@ -64,6 +65,7 @@ class Agent:
         self.epsilon_end = epsilon_end
         self.epsilon_dec = epsilon_dec
         self.learning_rate = learning_rate
+        self.input_dims = input_dims
         self.action_space = [i for i in range(n_actions)]
         self.batch_size = batch_size
         self.memory_size = max_memory_size
@@ -159,18 +161,21 @@ def initialise_game_state():
 
 # ------------------------------------- TRAIN ------------------------------------
 def train():
-    logging.basicConfig(filename='output.txt', level=logging.INFO, format='', filemode='w')
-
     game_state = initialise_game_state()
     agent = Agent(gamma=0.99, epsilon=1.0, batch_size=64, n_actions=len(game_state.available_actions),
                   input_dims=[32], learning_rate=0.003, epsilon_end=0.01, epsilon_dec=2e-4)
 
+    n_games = 5  # amount of complete game episodes
+
+    initialise_logging(agent, n_games)
+
+    total_iterations = 0
     scores, epsilon_history = [], []
-    n_games = 50  # amount of complete game episodes
 
     for i in range(n_games):
         score = 0
         terminal = False
+        iterations = 0
         map_state = game_state.get_map_state()
 
         # Continue until game reached terminal state
@@ -180,6 +185,7 @@ def train():
             new_map_state = game_state.get_map_state()
 
             score += reward
+            iterations += 1
 
             agent.store_transition(action, map_state, new_map_state, reward, terminal)
             agent.learn()
@@ -191,14 +197,24 @@ def train():
         epsilon_history.append(agent.epsilon)
         average_score = np.mean(scores[-10:])
 
-        logging.info(f"Episode: {i} Score: {score:.2f} Average Score: {average_score:.2f} Epsilon: {agent.epsilon:.2f}")
+        logging.info(f"Episode: {i} \
+        Score: {score:.2f} \
+        Average Score: {average_score:.2f} \
+        Epsilon: {agent.epsilon:.2f} \
+        Iterations: {iterations}")
+
+        total_iterations += iterations
 
         # Reset Game State
         game_state = initialise_game_state()
 
+    logging.info(f"\nTOTAL ITERATIONS COMPLETED: {total_iterations}")
+
+    current_time = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
+    save_log(current_time)
+
     # Plot data
     x = [i + 1 for i in range(n_games)]
-    current_time = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
     plot_learning(x, scores, epsilon_history, f"Output_Graph_EpsScore_{current_time}.png")
 
 
@@ -236,6 +252,23 @@ def plot_learning(x, scores, epsilons, filename, lines=None):
 
     plt.savefig(save_path + filename)
     plt.show(block=True)
+
+
+# ------------------------------------- LOGGING ----------------------------------
+def initialise_logging(agent, episodes):
+    save_path = os.path.dirname(os.path.abspath(__file__)) + "/Logs/"
+    if not os.path.exists(save_path):
+        os.makedirs("Logs")
+    logging.basicConfig(filename=save_path + f'output_recent.txt', level=logging.INFO, format='', filemode='w')
+
+    logging.info(f"Episodes: {episodes} | Gamma: {agent.gamma} | Learning Rate: {agent.learning_rate} \
+    Epsilon: {agent.epsilon} | Epsilon Decrement: {agent.epsilon_dec} | Epsilon End: {agent.epsilon_end} \
+    Batch Size: {agent.batch_size} | Number Of Actions: {len(agent.action_space)} | Input Dimensions: {agent.input_dims}\n")
+
+
+def save_log(current_time):
+    save_path = os.path.dirname(os.path.abspath(__file__)) + "/Logs/"
+    shutil.copyfile(save_path + f'output_recent.txt', save_path + f'output_{current_time}.txt')
 
 
 # ------------------------------------- MAIN -------------------------------------
