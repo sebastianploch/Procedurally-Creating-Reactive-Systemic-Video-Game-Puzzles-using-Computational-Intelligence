@@ -90,3 +90,6 @@ Content/Python/__pycache__/
 # Ignore MLs log
 Content/Python/output.txt
 
+# Ignore Logs and Graphs
+Content/Python/Graphs/
+Content/Python/Logs/
