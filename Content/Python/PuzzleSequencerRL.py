@@ -174,13 +174,15 @@ def train():
                   target_model_update_rate=500)
 
     n_games = 80  # amount of complete game episodes
+    model_save_rate = 10
 
+    initialise_model_saving()
     initialise_logging(agent, n_games)
 
     total_iterations = 0
     scores, average_scores, epsilon_history = [], [], []
 
-    for i in range(n_games):
+    for episode in range(n_games):
         score = 0
         terminal = False
         iterations = 0
@@ -209,13 +211,17 @@ def train():
         average_score = np.mean(scores[-10:])
         average_scores.append(average_score)
 
-        logging.info(f"Episode: {i} \
+        logging.info(f"Episode: {episode} \
         Score: {score:.2f} \
         Average Score: {average_score:.2f} \
         Epsilon: {agent.epsilon:.2f} \
         Iterations: {iterations}")
 
         total_iterations += iterations
+
+        # Save model
+        if episode % model_save_rate == 0:
+            save_model(agent.model, episode)
 
         # Reset Game State
         game_state = initialise_game_state()
@@ -317,6 +323,16 @@ def initialise_logging(agent, episodes):
 def save_log(current_time):
     save_path = os.path.dirname(os.path.abspath(__file__)) + "/Logs/"
     shutil.copyfile(save_path + f'output_recent.txt', save_path + f'output_{current_time}.txt')
+
+
+def initialise_model_saving():
+    save_path = os.path.dirname(os.path.abspath(__file__)) + "/Pre-Trained Models/"
+    if not os.path.exists(save_path):
+        os.makedirs("Pre-Trained Models")
+
+
+def save_model(model, episode):
+    torch.save(model, f"Pre-Trained Models/model_episode_{str(episode)}.pth")
 
 
 # ------------------------------------- MAIN -------------------------------------
