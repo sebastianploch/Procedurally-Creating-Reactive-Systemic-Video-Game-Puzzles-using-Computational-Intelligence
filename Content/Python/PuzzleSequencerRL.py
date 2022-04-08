@@ -59,7 +59,7 @@ class Agent:
     layer2_dims = 256
 
     def __init__(self, gamma, epsilon, learning_rate, input_dims, batch_size, n_actions,
-                 max_memory_size=100000, epsilon_end=0.01, epsilon_dec=5e-4):
+                 max_memory_size=100000, target_model_update_rate=1000, epsilon_end=0.01, epsilon_dec=5e-4):
         self.gamma = gamma
         self.epsilon = epsilon
         self.epsilon_end = epsilon_end
@@ -69,9 +69,11 @@ class Agent:
         self.action_space = [i for i in range(n_actions)]
         self.batch_size = batch_size
         self.memory_size = max_memory_size
+        self.target_model_update_rate = target_model_update_rate
         self.memory_cntr = 0
 
         self.model = DQN(learning_rate, input_dims, self.layer1_dims, self.layer2_dims, n_actions)
+        self.target_model = DQN(learning_rate, input_dims, self.layer1_dims, self.layer2_dims, n_actions)
 
         # Replay Memory
         self.state_memory = np.zeros((self.memory_size, *input_dims), dtype=np.float32)
@@ -102,7 +104,7 @@ class Agent:
 
         return action
 
-    def learn(self):
+    def learn(self, iteration):
         # Early-out batch is insufficient
         if self.memory_cntr < self.batch_size:
             return
@@ -122,7 +124,9 @@ class Agent:
 
         # Calculate Q
         q_value = self.model.forward(state_batch)[batch_index, action_batch]
-        q_next_value = self.model.forward(new_state_batch)  # this can be turned into target network to stabilise
+        # q_next_value = self.model.forward(new_state_batch)  # this can be turned into target network to stabilise
+        q_next_value = self.target_model(new_state_batch)
+
         q_next_value[terminal_batch] = 0.0
 
         q_target = reward_batch + self.gamma * torch.max(q_next_value, dim=1)[0]
@@ -135,6 +139,9 @@ class Agent:
         self.epsilon = self.epsilon - self.epsilon_dec if self.epsilon > self.epsilon_end \
             else self.epsilon_end
 
+        if iteration % self.target_model_update_rate == 0:
+            self.target_model.load_state_dict(self.model.state_dict())
+
 
 # ---------------------------------- GAME STATE ----------------------------------
 def initialise_game_state():
@@ -142,15 +149,15 @@ def initialise_game_state():
 
     # Init puzzles
     button = PSP.Button([1, 1])
-    # pressure_plate = PSP.PressurePlate([2, 2], button)
-    door = PSP.Door([3, 3], button)
+    pressure_plate = PSP.PressurePlate([2, 2], button)
+    door = PSP.Door([3, 3], pressure_plate)
 
     # Set terminal puzzle
     game_state.set_terminal_puzzle(door)
 
     # Add puzzles to game state
     game_state.add_puzzle(button)
-    # game_state.add_puzzle(pressure_plate)
+    game_state.add_puzzle(pressure_plate)
     game_state.add_puzzle(door)
 
     # print("Available actions for the game state:")
@@ -162,10 +169,11 @@ def initialise_game_state():
 # ------------------------------------- TRAIN ------------------------------------
 def train():
     game_state = initialise_game_state()
-    agent = Agent(gamma=0.99, epsilon=1.0, batch_size=64, n_actions=len(game_state.available_actions),
-                  input_dims=[32], learning_rate=0.003, epsilon_end=0.01, epsilon_dec=2e-4)
+    agent = Agent(gamma=0.99, epsilon=1.0, batch_size=32, n_actions=len(game_state.available_actions),
+                  input_dims=[32], learning_rate=0.0001, epsilon_end=0.01, epsilon_dec=2e-4,
+                  target_model_update_rate=500)
 
-    n_games = 5  # amount of complete game episodes
+    n_games = 80  # amount of complete game episodes
 
     initialise_logging(agent, n_games)
 
@@ -188,9 +196,11 @@ def train():
             iterations += 1
 
             agent.store_transition(action, map_state, new_map_state, reward, terminal)
-            agent.learn()
+            agent.learn(iterations)
 
             map_state = new_map_state
+
+            print(f"Iteration: {iterations} Action: {action} Reward: {reward} Score: {score} Terminal: {terminal}")
 
         # Collect episode data
         scores.append(score)
@@ -300,7 +310,8 @@ def initialise_logging(agent, episodes):
 
     logging.info(f"Episodes: {episodes} | Gamma: {agent.gamma} | Learning Rate: {agent.learning_rate} \
     Epsilon: {agent.epsilon} | Epsilon Decrement: {agent.epsilon_dec} | Epsilon End: {agent.epsilon_end} \
-    Batch Size: {agent.batch_size} | Number Of Actions: {len(agent.action_space)} | Input Dimensions: {agent.input_dims}\n")
+    Batch Size: {agent.batch_size} | Number Of Actions: {len(agent.action_space)} | Input Dimensions: {agent.input_dims} \
+    Target Network Update Rate: {agent.target_model_update_rate}\n")
 
 
 def save_log(current_time):
