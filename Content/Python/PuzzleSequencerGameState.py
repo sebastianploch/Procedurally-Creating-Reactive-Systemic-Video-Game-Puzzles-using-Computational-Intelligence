@@ -1,12 +1,5 @@
-import os
-
 import numpy as np
-
-
-# available_actions = {"idle": 0., "press": 1., "activate": 2., "open": 3., "place_pressure_plate": 4.,
-#                      # Puzzle Interaction
-#                      "move_up": 5., "move_down": 6., "move_left": 7., "move_right": 8.}  # Grid Selection
-# """All available actions in the world"""
+import PuzzleSequencerConstants as PSC
 
 
 class GameState:
@@ -47,47 +40,48 @@ class GameState:
 
     def step(self, action):
         is_terminal = False
-        reward = 0.
+        reward = 0
 
         # Early-out idle action
         if action == GameState.available_actions["idle"]:
+            reward = PSC.IDLE_MOVE_REWARD
             return reward, is_terminal
 
         # Select grid
         if action == GameState.available_actions["move_up"]:
             if self.current_grid_pos_y - 1 >= 0:
-                reward += 0.01
+                reward = PSC.VALID_MOVE_REWARD
                 self.current_grid_pos_y -= 1
                 self.update_selected_puzzle()
             else:
-                reward -= 0.5
+                reward = PSC.INVALID_MOVE_REWARD
             return reward, is_terminal
 
         elif action == GameState.available_actions["move_down"]:
             if self.current_grid_pos_y + 1 < self.map_height:
-                reward += 0.01
+                reward = PSC.VALID_MOVE_REWARD
                 self.current_grid_pos_y += 1
                 self.update_selected_puzzle()
             else:
-                reward -= 0.5
+                reward = PSC.INVALID_MOVE_REWARD
             return reward, is_terminal
 
         elif action == GameState.available_actions["move_left"]:
             if self.current_grid_pos_x - 1 >= 0:
-                reward += 0.01
+                reward = PSC.VALID_MOVE_REWARD
                 self.current_grid_pos_x -= 1
                 self.update_selected_puzzle()
             else:
-                reward -= 0.5
+                reward = PSC.VALID_MOVE_REWARD
             return reward, is_terminal
 
         elif action == GameState.available_actions["move_right"]:
             if self.current_grid_pos_x + 1 < self.map_width:
-                reward += 0.01
+                reward = PSC.VALID_MOVE_REWARD
                 self.current_grid_pos_x += 1
                 self.update_selected_puzzle()
             else:
-                reward -= 0.5
+                reward = PSC.INVALID_MOVE_REWARD
             return reward, is_terminal
 
         # Update puzzle it is in the selected grid space
@@ -105,7 +99,9 @@ class GameState:
             # Terminate if the terminal puzzle is reached and completed
             if self.selected_puzzle is self.terminal_puzzle and self.selected_puzzle.is_completed():
                 is_terminal = True
-                reward = 1.
+                reward = PSC.TERMINAL_PUZZLE_REWARD
+        else:
+            reward = PSC.INVALID_PUZZLE_REWARD
 
         return reward, is_terminal
 

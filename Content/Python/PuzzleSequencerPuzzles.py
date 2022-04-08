@@ -1,4 +1,5 @@
 import PuzzleSequencerGameState as PSGS
+import PuzzleSequencerConstants as PSC
 
 
 class PuzzleObject:
@@ -35,20 +36,21 @@ class Button(PuzzleObject):
         PSGS.GameState.add_available_action_as_key("press")
 
     def update_puzzle(self, action):
-        reward = 0.
+        reward = 0
 
         if self.completed:
+            reward = PSC.COMPLETED_PUZZLE_REWARD
             return reward
 
         # checking the one hot encoding
         if action == PSGS.GameState.available_actions["press"]:
             self.current_state = self.available_states["pressed"]
             self.completed = True
-            reward = 0.25
+            reward = PSC.VALID_PUZZLE_REWARD
 
         # punish
         else:
-            reward = -0.15
+            reward = PSC.INVALID_PUZZLE_REWARD
 
         return reward
 
@@ -60,7 +62,7 @@ class PressurePlate(PuzzleObject):
         self.depends_on = depends_on
 
     def update_puzzle(self, action):
-        reward = 0.
+        reward = 0
 
         # if self.completed:
         #     return reward
@@ -84,10 +86,11 @@ class Door(PuzzleObject):
         self.depends_on = depends_on
 
     def update_puzzle(self, action):
-        reward = 0.
+        reward = 0
 
         # Early-out completed puzzle
         if self.completed:
+            reward = PSC.COMPLETED_PUZZLE_REWARD
             return reward
 
         # Unlock door if dependant object is completed
@@ -98,10 +101,10 @@ class Door(PuzzleObject):
         if self.current_state == self.available_states["closed"] and action == PSGS.GameState.available_actions["open"]:
             self.current_state = self.available_states["open"]
             self.completed = True
-            reward = 0.25
+            reward = PSC.VALID_PUZZLE_REWARD
 
         # punish
         else:
-            reward = -0.15
+            reward = PSC.INVALID_PUZZLE_REWARD
 
         return reward
