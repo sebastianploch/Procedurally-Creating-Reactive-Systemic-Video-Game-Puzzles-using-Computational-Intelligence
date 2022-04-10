@@ -130,8 +130,17 @@ class GameState:
     def get_map(self):
         return self.map
 
-    def get_map_size(self):
+    def get_total_map_size(self):
         return self.map_width * self.map_height
+
+    def get_map_size(self) -> tuple[int, int]:
+        return self.map_width, self.map_height
+
+    def get_map_width(self):
+        return self.map_width
+
+    def get_map_height(self):
+        return self.map_height
 
     def get_position_map(self):
         position_map = np.full((self.map_width, self.map_height), 0)

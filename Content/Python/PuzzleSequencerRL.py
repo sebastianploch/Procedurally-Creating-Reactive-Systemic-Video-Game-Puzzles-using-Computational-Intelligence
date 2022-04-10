@@ -93,16 +93,19 @@ class Agent:
         self.memory_cntr += 1
 
     def choose_action(self, map_state):
-        # Exploration
+        # Exploitation
         if np.random.random() > self.epsilon:
             state = torch.from_numpy(map_state).to(self.model.device)
             actions = self.model.forward(state)
             action = torch.argmax(actions).item()
-        # Exploitation
+        # Exploration
         else:
             action = np.random.choice(self.action_space)
 
         return action
+
+    def set_model(self, model):
+        self.model = model
 
     def learn(self, iteration):
         # Early-out batch is insufficient
@@ -144,21 +147,38 @@ class Agent:
 
 
 # ---------------------------------- GAME STATE ----------------------------------
-def initialise_game_state():
+def initialise_game_state(randomise=False):
     game_state = PSGS.GameState(4, 4)
 
-    # Init puzzles
-    button = PSP.Button([1, 1])
-    pressure_plate = PSP.PressurePlate([2, 2], button)
-    door = PSP.Door([3, 3], pressure_plate)
+    if randomise:
+        x, y = randomise_puzzle_location(game_state)
+        button = PSP.Button([x, y])
+        game_state.add_puzzle(button)
 
-    # Set terminal puzzle
-    game_state.set_terminal_puzzle(door)
+        # x, y = randomise_puzzle_location(game_state)
+        # pressure_plate = PSP.PressurePlate([x, y], button)
+        # game_state.add_puzzle(pressure_plate)
 
-    # Add puzzles to game state
-    game_state.add_puzzle(button)
-    game_state.add_puzzle(pressure_plate)
-    game_state.add_puzzle(door)
+        x, y = randomise_puzzle_location(game_state)
+        door = PSP.Door([x, y], button)
+        game_state.add_puzzle(door)
+
+        game_state.set_terminal_puzzle(door)
+
+    else:
+        # Init puzzles
+        button = PSP.Button([2, 1])
+        # pressure_plate = PSP.PressurePlate([3, 2], button)
+        door = PSP.Door([0, 1], button)
+
+        # Set terminal puzzle
+        game_state.set_terminal_puzzle(door)
+
+        # Add puzzles to game state
+        game_state.add_puzzle(button)
+        # game_state.add_puzzle(pressure_plate)
+        game_state.add_puzzle(door)
+        # print(game_state.get_map())
 
     # print("Available actions for the game state:")
     # print(PSGS.GameState.available_actions)
@@ -166,14 +186,76 @@ def initialise_game_state():
     return game_state
 
 
+def randomise_puzzle_location(game_state):
+    puzzle_map = game_state.get_map()
+
+    rand_x = random.randint(0, game_state.get_map_width() - 1)
+    rand_y = random.randint(0, game_state.get_map_height() - 1)
+    while puzzle_map[rand_x, rand_y] != -1:
+        rand_x = random.randint(0, game_state.get_map_width() - 1)
+        rand_y = random.randint(0, game_state.get_map_height() - 1)
+
+    return [rand_x, rand_y]
+
+
+# -------------------------------------- TEST-------------------------------------
+def test():
+    game_state = initialise_game_state()
+    agent = Agent(gamma=0.99, epsilon=0.01, batch_size=32, n_actions=len(game_state.available_actions),
+                  input_dims=[32], learning_rate=0.0001, epsilon_end=0.01, epsilon_dec=2e-4,
+                  target_model_update_rate=500)
+    model = load_model("Pre-Trained Models/model_episode_140.pth", game_state)
+    agent.set_model(model)
+
+    n_games = 10000
+
+    total_iterations = 0
+    scores, average_scores = [], []
+
+    # Disable gradient computation for model evaluation
+    with torch.no_grad():
+        for episode in range(n_games):
+            score = 0
+            iterations = 0
+            terminal = False
+            map_state = game_state.get_map_state()
+
+            while not terminal:
+                action = agent.choose_action(map_state)
+                reward, terminal = game_state.step(action)
+
+                new_map_state = game_state.get_map_state()
+
+                score += reward
+                iterations += 1
+
+                map_state = new_map_state
+                print(f"Iteration: {iterations} Action: {action} Reward: {reward} Score: {score} Terminal: {terminal}")
+
+            scores.append(score)
+            average_score = np.mean(scores[-10:])
+            average_scores.append(average_score)
+
+            print(f"Episode: [{episode}/{n_games}] \
+                    Score: {score:.2f} \
+                    Average Score: {average_score:.2f} \
+                    Iterations: {iterations}")
+
+            total_iterations += iterations
+            game_state = initialise_game_state()
+    print(f"TOTAL ITERATIONS: {total_iterations}")
+
+
 # ------------------------------------- TRAIN ------------------------------------
 def train():
     game_state = initialise_game_state()
+    # game_state2 = initialise_game_state(True)
+
     agent = Agent(gamma=0.99, epsilon=1.0, batch_size=32, n_actions=len(game_state.available_actions),
-                  input_dims=[32], learning_rate=0.0001, epsilon_end=0.01, epsilon_dec=2e-4,
+                  input_dims=[32], learning_rate=0.0001, epsilon_end=0.01, epsilon_dec=5e-5,
                   target_model_update_rate=500)
 
-    n_games = 80  # amount of complete game episodes
+    n_games = 200  # amount of complete game episodes
     model_save_rate = 10
 
     initialise_model_saving()
@@ -202,7 +284,8 @@ def train():
 
             map_state = new_map_state
 
-            print(f"Iteration: {iterations} Action: {action} Reward: {reward} Score: {score} Terminal: {terminal}")
+            print(
+                f"Iteration: {iterations} Action: {action} Reward: {reward} Score: {score} Terminal: {terminal} Epsilon: {agent.epsilon}")
 
         # Collect episode data
         scores.append(score)
@@ -224,7 +307,7 @@ def train():
             save_model(agent.model, episode)
 
         # Reset Game State
-        game_state = initialise_game_state()
+        game_state = initialise_game_state(True)
 
     logging.info(f"\nTOTAL ITERATIONS COMPLETED: {total_iterations}")
 
@@ -289,6 +372,11 @@ def plot_learning(x, scores, epsilons, filename):
     plt.show(block=True)
 
 
+def plot_testing():
+    fig = plt.figure(figsize=(15, 10), dpi=100)
+    ax = fig.add_subplot(111, label="")
+
+
 # https://localcoder.org/numpy-version-of-exponential-weighted-moving-average-equivalent-to-pandas-ewm
 def numpy_ewma_vectorized_v2(data, window):
     alpha = 2 / (window + 1.0)
@@ -331,14 +419,26 @@ def initialise_model_saving():
         os.makedirs("Pre-Trained Models")
 
 
+# Save model's state dictionary for inference
 def save_model(model, episode):
-    torch.save(model, f"Pre-Trained Models/model_episode_{str(episode)}.pth")
+    torch.save(model.state_dict(), f"Pre-Trained Models/model_episode_{str(episode)}.pth")
+
+
+# Load model's state dictionary for inference
+def load_model(model_path, game_state):
+    model = DQN(0.001, [32], 256, 256, len(game_state.available_actions))
+    model.load_state_dict(torch.load(model_path))
+    model.eval()
+    return model
 
 
 # ------------------------------------- MAIN -------------------------------------
 def main(mode):
     if mode == "train":
         train()
+
+    elif mode == "test":
+        test()
 
 
 if __name__ == "__main__":
