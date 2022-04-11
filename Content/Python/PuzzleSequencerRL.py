@@ -40,6 +40,7 @@ class DQN(nn.Module):
         self.layer3 = nn.Linear(self.layer2_dims, self.n_actions)
 
         self.optimiser = optim.Adam(self.parameters(), lr=learning_rate)
+        # self.optimiser = optim.RMSprop(self.parameters(), lr=learning_rate)
         self.loss = nn.MSELoss()
         self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
         self.to(self.device)
@@ -167,9 +168,9 @@ def initialise_game_state(randomise=False):
 
     else:
         # Init puzzles
-        button = PSP.Button([2, 1])
+        button = PSP.Button([1, 1])
         # pressure_plate = PSP.PressurePlate([3, 2], button)
-        door = PSP.Door([0, 1], button)
+        door = PSP.Door([3, 3], button)
 
         # Set terminal puzzle
         game_state.set_terminal_puzzle(door)
@@ -249,11 +250,10 @@ def test():
 # ------------------------------------- TRAIN ------------------------------------
 def train():
     game_state = initialise_game_state()
-    # game_state2 = initialise_game_state(True)
 
     agent = Agent(gamma=0.99, epsilon=1.0, batch_size=32, n_actions=len(game_state.available_actions),
-                  input_dims=[32], learning_rate=0.0001, epsilon_end=0.01, epsilon_dec=5e-5,
-                  target_model_update_rate=500)
+                  input_dims=[32], learning_rate=0.001, epsilon_end=0.01, epsilon_dec=1e-4,
+                  target_model_update_rate=250)
 
     n_games = 200  # amount of complete game episodes
     model_save_rate = 10
@@ -275,6 +275,10 @@ def train():
             action = agent.choose_action(map_state)
             reward, terminal = game_state.step(action)
             new_map_state = game_state.get_map_state()
+
+            if iterations >= 1000:
+                reward -= 3000
+                terminal = True
 
             score += reward
             iterations += 1

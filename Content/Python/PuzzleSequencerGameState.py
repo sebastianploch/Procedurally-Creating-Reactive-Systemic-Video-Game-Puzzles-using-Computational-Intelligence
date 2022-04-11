@@ -1,4 +1,6 @@
+import math
 import numpy as np
+
 import PuzzleSequencerConstants as PSC
 
 
@@ -13,6 +15,7 @@ class GameState:
         self.map_height = map_height
         self.map = np.full((map_width, map_height), -1)
 
+        self.actions_taken = 0
         self.current_grid_pos_x = 0
         self.current_grid_pos_y = 0
         self.selected_puzzle = None
@@ -45,17 +48,15 @@ class GameState:
         # Early-out idle action
         if action == GameState.available_actions["idle"]:
             reward = PSC.IDLE_MOVE_REWARD
-            return reward, is_terminal
 
         # Select grid
-        if action == GameState.available_actions["move_up"]:
+        elif action == GameState.available_actions["move_up"]:
             if self.current_grid_pos_y - 1 >= 0:
                 reward = PSC.VALID_MOVE_REWARD
                 self.current_grid_pos_y -= 1
                 self.update_selected_puzzle()
             else:
                 reward = PSC.INVALID_MOVE_REWARD
-            return reward, is_terminal
 
         elif action == GameState.available_actions["move_down"]:
             if self.current_grid_pos_y + 1 < self.map_height:
@@ -64,7 +65,6 @@ class GameState:
                 self.update_selected_puzzle()
             else:
                 reward = PSC.INVALID_MOVE_REWARD
-            return reward, is_terminal
 
         elif action == GameState.available_actions["move_left"]:
             if self.current_grid_pos_x - 1 >= 0:
@@ -73,7 +73,6 @@ class GameState:
                 self.update_selected_puzzle()
             else:
                 reward = PSC.VALID_MOVE_REWARD
-            return reward, is_terminal
 
         elif action == GameState.available_actions["move_right"]:
             if self.current_grid_pos_x + 1 < self.map_width:
@@ -82,10 +81,9 @@ class GameState:
                 self.update_selected_puzzle()
             else:
                 reward = PSC.INVALID_MOVE_REWARD
-            return reward, is_terminal
 
         # Update puzzle it is in the selected grid space
-        if self.selected_puzzle is not None:
+        elif self.selected_puzzle is not None:
             reward = self.selected_puzzle.update_puzzle(action)
             puzzle_position = self.selected_puzzle.get_position()
             self.map[puzzle_position[0], puzzle_position[1]] = self.selected_puzzle.get_current_state()
@@ -102,6 +100,14 @@ class GameState:
                 reward = PSC.TERMINAL_PUZZLE_REWARD
         else:
             reward = PSC.INVALID_PUZZLE_REWARD
+
+        # Apply reward discount depending on the amount of actions taken
+        reward -= self.actions_taken * PSC.ACTION_TAKEN_DISCOUNT
+        self.actions_taken += 1
+
+        # Normalise the reward using sigmoid
+        # reward = 1 / (1 + np.exp(-reward))
+        # reward = (reward - -1) / (1 - -1)
 
         return reward, is_terminal
 
