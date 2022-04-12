@@ -181,11 +181,11 @@ class Agent:
 def train():
     game_state = initialise_game_state()
 
-    agent = Agent(gamma=0.99, learning_rate=5e-4, epsilon=1.0, epsilon_min=0.01, epsilon_decrement=1e-3,
+    agent = Agent(gamma=0.99, learning_rate=1e-4, epsilon=1.0, epsilon_min=0.01, epsilon_decrement=1e-4,
                   n_actions=len(PSGS.GameState.available_actions), input_dims=[32], memory_size=1000000,
                   batch_size=64, target_network_replace=1000)
 
-    num_episodes = 500
+    num_episodes = 700
     scores, epsilon_history = [], []
     total_iterations = 0
 
@@ -216,6 +216,9 @@ def train():
                   Score: {score} \
                   Terminal: {terminal} \
                   Epsilon: {agent.epsilon}")
+
+            if iterations >= 5000:
+                break
 
         epsilon_history.append(agent.epsilon)
         scores.append(score)
@@ -250,13 +253,30 @@ def initialise_game_state(randomise=False):
 
     if randomise:
         x, y = randomise_puzzle_location(game_state)
-        ez_door = PSP.EzDoor([x, y])
-        game_state.add_puzzle(ez_door)
-        game_state.set_terminal_puzzle(ez_door)
+        button = PSP.Button([x, y])
+        game_state.add_puzzle(button)
+        # ez_door = PSP.EzDoor([x, y])
+        # game_state.add_puzzle(ez_door)
+
+        x, y = randomise_puzzle_location(game_state)
+        door = PSP.Door([x, y], button)
+        game_state.add_puzzle(door)
+
+        # game_state.set_terminal_puzzle(ez_door)
+        game_state.set_terminal_puzzle(door)
+
     else:
-        ez_door = PSP.EzDoor([1, 1])
-        game_state.add_puzzle(ez_door)
-        game_state.set_terminal_puzzle(ez_door)
+        # ez_door = PSP.EzDoor([1, 1])
+        # game_state.add_puzzle(ez_door)
+        button = PSP.Button([1, 1])
+        game_state.add_puzzle(button)
+
+        door = PSP.Door([2, 2], button)
+        game_state.add_puzzle(door)
+
+        game_state.set_terminal_puzzle(door)
+
+        # game_state.set_terminal_puzzle(ez_door)
 
     return game_state
 
@@ -302,8 +322,9 @@ def plot_learning(x, scores, epsilons, filename):
              label="Running Average Score")
     ax2.plot(x, ema, color='green', linestyle='solid', marker='o', markerfacecolor='green', markersize=8,
              label="Exponential Moving Average Score")
-    ax2.plot(x, scores, color='red', linestyle='solid', marker='o', markerfacecolor='red', markersize=8,
-             label="Raw Score")
+    # ax2.plot(x, scores, color='red', linestyle='solid', marker='o', markerfacecolor='red', markersize=8,
+    #          label="Raw Score")
+    ax2.plot(x, scores, color='red', linestyle='--', markerfacecolor='red', label="Raw Score")
     ax2.axes.get_xaxis().set_visible(False)
     ax2.yaxis.tick_right()
     ax2.yaxis.set_label_position('right')

@@ -56,8 +56,8 @@ class GameState:
                 reward = PSC.VALID_MOVE_REWARD
                 self.current_grid_pos_y -= 1
                 self.update_selected_puzzle()
-                return reward, is_terminal
-                # self.invalid_actions_taken += 1
+                # return reward, is_terminal
+                self.invalid_actions_taken += 1
             else:
                 reward = PSC.INVALID_MOVE_REWARD
                 self.invalid_actions_taken += 1
@@ -67,8 +67,8 @@ class GameState:
                 reward = PSC.VALID_MOVE_REWARD
                 self.current_grid_pos_y += 1
                 self.update_selected_puzzle()
-                return reward, is_terminal
-                # self.invalid_actions_taken += 1
+                # return reward, is_terminal
+                self.invalid_actions_taken += 1
             else:
                 reward = PSC.INVALID_MOVE_REWARD
                 self.invalid_actions_taken += 1
@@ -78,8 +78,8 @@ class GameState:
                 reward = PSC.VALID_MOVE_REWARD
                 self.current_grid_pos_x -= 1
                 self.update_selected_puzzle()
-                return reward, is_terminal
-                # self.invalid_actions_taken += 1
+                # return reward, is_terminal
+                self.invalid_actions_taken += 1
             else:
                 reward = PSC.VALID_MOVE_REWARD
                 self.invalid_actions_taken += 1
@@ -89,8 +89,8 @@ class GameState:
                 reward = PSC.VALID_MOVE_REWARD
                 self.current_grid_pos_x += 1
                 self.update_selected_puzzle()
-                return reward, is_terminal
-                # self.invalid_actions_taken += 1
+                # return reward, is_terminal
+                self.invalid_actions_taken += 1
             else:
                 reward = PSC.INVALID_MOVE_REWARD
                 self.invalid_actions_taken += 1
@@ -125,7 +125,7 @@ class GameState:
         # Apply reward discount depending on the amount of actions taken
         # reward -= PSC.INVALID_ACTION_TAKEN_DISCOUNT * self.invalid_actions_taken
         # reward = max(reward, 0.)
-        # reward -= PSC.INVALID_ACTION_TAKEN_DISCOUNT * self.invalid_actions_taken
+        reward -= PSC.INVALID_ACTION_TAKEN_DISCOUNT * self.invalid_actions_taken
 
         # Normalise the reward using sigmoid
         # reward = 1 / (1 + np.exp(-reward))
