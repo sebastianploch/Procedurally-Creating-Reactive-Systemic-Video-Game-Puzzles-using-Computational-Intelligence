@@ -79,6 +79,30 @@ class PressurePlate(PuzzleObject):
         return reward
 
 
+class EzDoor(PuzzleObject):
+    def __init__(self, position):
+        super().__init__(position, {"closed": 0, "opened": 1})
+        PSGS.GameState.add_available_action_as_key("open")
+
+    def update_puzzle(self, action):
+        reward = 0
+        valid_move = False
+
+        if self.completed:
+            reward = PSC.COMPLETED_PUZZLE_REWARD
+
+        if action == PSGS.GameState.available_actions["open"]:
+            self.current_state = self.available_states["opened"]
+            self.completed = True
+            reward = PSC.VALID_PUZZLE_REWARD
+            valid_move = True
+
+        else:
+            reward = PSC.INVALID_PUZZLE_REWARD
+
+        return reward, valid_move
+
+
 class Door(PuzzleObject):
     def __init__(self, position, depends_on):
         super().__init__(position, {"locked": 0, "closed": 1, "open": 2})

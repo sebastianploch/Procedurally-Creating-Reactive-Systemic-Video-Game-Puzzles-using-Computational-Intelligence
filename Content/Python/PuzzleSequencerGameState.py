@@ -15,7 +15,7 @@ class GameState:
         self.map_height = map_height
         self.map = np.full((map_width, map_height), -1)
 
-        self.actions_taken = 0
+        self.invalid_actions_taken = 0
         self.current_grid_pos_x = 0
         self.current_grid_pos_y = 0
         self.selected_puzzle = None
@@ -48,6 +48,7 @@ class GameState:
         # Early-out idle action
         if action == GameState.available_actions["idle"]:
             reward = PSC.IDLE_MOVE_REWARD
+            self.invalid_actions_taken += 1
 
         # Select grid
         elif action == GameState.available_actions["move_up"]:
@@ -55,36 +56,48 @@ class GameState:
                 reward = PSC.VALID_MOVE_REWARD
                 self.current_grid_pos_y -= 1
                 self.update_selected_puzzle()
+                return reward, is_terminal
+                # self.invalid_actions_taken += 1
             else:
                 reward = PSC.INVALID_MOVE_REWARD
+                self.invalid_actions_taken += 1
 
         elif action == GameState.available_actions["move_down"]:
             if self.current_grid_pos_y + 1 < self.map_height:
                 reward = PSC.VALID_MOVE_REWARD
                 self.current_grid_pos_y += 1
                 self.update_selected_puzzle()
+                return reward, is_terminal
+                # self.invalid_actions_taken += 1
             else:
                 reward = PSC.INVALID_MOVE_REWARD
+                self.invalid_actions_taken += 1
 
         elif action == GameState.available_actions["move_left"]:
             if self.current_grid_pos_x - 1 >= 0:
                 reward = PSC.VALID_MOVE_REWARD
                 self.current_grid_pos_x -= 1
                 self.update_selected_puzzle()
+                return reward, is_terminal
+                # self.invalid_actions_taken += 1
             else:
                 reward = PSC.VALID_MOVE_REWARD
+                self.invalid_actions_taken += 1
 
         elif action == GameState.available_actions["move_right"]:
             if self.current_grid_pos_x + 1 < self.map_width:
                 reward = PSC.VALID_MOVE_REWARD
                 self.current_grid_pos_x += 1
                 self.update_selected_puzzle()
+                return reward, is_terminal
+                # self.invalid_actions_taken += 1
             else:
                 reward = PSC.INVALID_MOVE_REWARD
+                self.invalid_actions_taken += 1
 
         # Update puzzle it is in the selected grid space
         elif self.selected_puzzle is not None:
-            reward = self.selected_puzzle.update_puzzle(action)
+            reward, valid_move = self.selected_puzzle.update_puzzle(action)
             puzzle_position = self.selected_puzzle.get_position()
             self.map[puzzle_position[0], puzzle_position[1]] = self.selected_puzzle.get_current_state()
 
@@ -98,12 +111,21 @@ class GameState:
             if self.selected_puzzle is self.terminal_puzzle and self.selected_puzzle.is_completed():
                 is_terminal = True
                 reward = PSC.TERMINAL_PUZZLE_REWARD
+                return reward, is_terminal
+
+            if valid_move:
+                return reward, is_terminal
+            else:
+                self.invalid_actions_taken += 1
+
         else:
             reward = PSC.INVALID_PUZZLE_REWARD
+            self.invalid_actions_taken += 1
 
         # Apply reward discount depending on the amount of actions taken
-        reward -= self.actions_taken * PSC.ACTION_TAKEN_DISCOUNT
-        self.actions_taken += 1
+        # reward -= PSC.INVALID_ACTION_TAKEN_DISCOUNT * self.invalid_actions_taken
+        # reward = max(reward, 0.)
+        reward -= PSC.INVALID_ACTION_TAKEN_DISCOUNT * self.invalid_actions_taken
 
         # Normalise the reward using sigmoid
         # reward = 1 / (1 + np.exp(-reward))
@@ -154,4 +176,7 @@ class GameState:
         return position_map
 
     def get_map_state(self):
-        return np.array([self.get_map(), self.get_position_map()], dtype=np.float32).ravel()
+        array = np.array([self.get_map(), self.get_position_map()], dtype=np.float32).ravel()
+        # array = np.insert(np.array([self.get_map(), self.get_position_map()], dtype=np.float32).ravel(),
+        #                   -1, self.actions_taken)
+        return array

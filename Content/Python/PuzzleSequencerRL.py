@@ -1,3 +1,4 @@
+import copy
 import os.path
 import shutil
 
@@ -72,6 +73,7 @@ class Agent:
         self.memory_size = max_memory_size
         self.target_model_update_rate = target_model_update_rate
         self.memory_cntr = 0
+        self.iterations = 0
 
         self.model = DQN(learning_rate, input_dims, self.layer1_dims, self.layer2_dims, n_actions)
         self.target_model = DQN(learning_rate, input_dims, self.layer1_dims, self.layer2_dims, n_actions)
@@ -108,12 +110,12 @@ class Agent:
     def set_model(self, model):
         self.model = model
 
-    def learn(self, iteration):
+    def learn(self):
         # Early-out batch is insufficient
         if self.memory_cntr < self.batch_size:
             return
 
-        self.model.optimiser.zero_grad()
+        # self.model.optimiser.zero_grad()
 
         max_memory = min(self.memory_cntr, self.memory_size)
 
@@ -143,8 +145,10 @@ class Agent:
         self.epsilon = self.epsilon - self.epsilon_dec if self.epsilon > self.epsilon_end \
             else self.epsilon_end
 
-        if iteration % self.target_model_update_rate == 0:
+        if self.iterations % self.target_model_update_rate == 0:
             self.target_model.load_state_dict(self.model.state_dict())
+
+        self.iterations += 1
 
 
 # ---------------------------------- GAME STATE ----------------------------------
@@ -153,33 +157,40 @@ def initialise_game_state(randomise=False):
 
     if randomise:
         x, y = randomise_puzzle_location(game_state)
-        button = PSP.Button([x, y])
-        game_state.add_puzzle(button)
-
+        ez_door = PSP.EzDoor([x, y])
+        game_state.add_puzzle(ez_door)
+        game_state.set_terminal_puzzle(ez_door)
         # x, y = randomise_puzzle_location(game_state)
-        # pressure_plate = PSP.PressurePlate([x, y], button)
-        # game_state.add_puzzle(pressure_plate)
-
-        x, y = randomise_puzzle_location(game_state)
-        door = PSP.Door([x, y], button)
-        game_state.add_puzzle(door)
-
-        game_state.set_terminal_puzzle(door)
+        # button = PSP.Button([x, y])
+        # game_state.add_puzzle(button)
+        #
+        # # x, y = randomise_puzzle_location(game_state)
+        # # pressure_plate = PSP.PressurePlate([x, y], button)
+        # # game_state.add_puzzle(pressure_plate)
+        #
+        # x, y = randomise_puzzle_location(game_state)
+        # door = PSP.Door([x, y], button)
+        # game_state.add_puzzle(door)
+        #
+        # game_state.set_terminal_puzzle(door)
 
     else:
-        # Init puzzles
-        button = PSP.Button([1, 1])
-        # pressure_plate = PSP.PressurePlate([3, 2], button)
-        door = PSP.Door([3, 3], button)
-
-        # Set terminal puzzle
-        game_state.set_terminal_puzzle(door)
-
-        # Add puzzles to game state
-        game_state.add_puzzle(button)
-        # game_state.add_puzzle(pressure_plate)
-        game_state.add_puzzle(door)
-        # print(game_state.get_map())
+        ez_door = PSP.EzDoor([1, 1])
+        game_state.add_puzzle(ez_door)
+        game_state.set_terminal_puzzle(ez_door)
+        # # Init puzzles
+        # button = PSP.Button([1, 1])
+        # # pressure_plate = PSP.PressurePlate([3, 2], button)
+        # door = PSP.Door([3, 3], button)
+        #
+        # # Set terminal puzzle
+        # game_state.set_terminal_puzzle(door)
+        #
+        # # Add puzzles to game state
+        # game_state.add_puzzle(button)
+        # # game_state.add_puzzle(pressure_plate)
+        # game_state.add_puzzle(door)
+        # # print(game_state.get_map())
 
     # print("Available actions for the game state:")
     # print(PSGS.GameState.available_actions)
@@ -250,12 +261,13 @@ def test():
 # ------------------------------------- TRAIN ------------------------------------
 def train():
     game_state = initialise_game_state()
+    cached_game_state = copy.copy(game_state)
 
     agent = Agent(gamma=0.99, epsilon=1.0, batch_size=32, n_actions=len(game_state.available_actions),
-                  input_dims=[32], learning_rate=0.001, epsilon_end=0.01, epsilon_dec=1e-4,
-                  target_model_update_rate=250)
+                  input_dims=[32], learning_rate=0.0001, epsilon_end=0.01, epsilon_dec=2e-5,
+                  target_model_update_rate=500)
 
-    n_games = 200  # amount of complete game episodes
+    n_games = 1000  # amount of complete game episodes
     model_save_rate = 10
 
     initialise_model_saving()
@@ -276,20 +288,24 @@ def train():
             reward, terminal = game_state.step(action)
             new_map_state = game_state.get_map_state()
 
-            if iterations >= 1000:
-                reward -= 3000
-                terminal = True
-
             score += reward
             iterations += 1
 
             agent.store_transition(action, map_state, new_map_state, reward, terminal)
-            agent.learn(iterations)
+            agent.learn()
 
             map_state = new_map_state
 
             print(
-                f"Iteration: {iterations} Action: {action} Reward: {reward} Score: {score} Terminal: {terminal} Epsilon: {agent.epsilon}")
+                f"Iteration: {iterations} \
+                Action: {action} \
+                Reward: {reward} \
+                Score: {score} \
+                Terminal: {terminal} \
+                Epsilon: {agent.epsilon}")
+
+            if iterations >= 500:
+                break
 
         # Collect episode data
         scores.append(score)
@@ -312,6 +328,13 @@ def train():
 
         # Reset Game State
         game_state = initialise_game_state(True)
+
+        # if agent.epsilon > 0.5 or episode % 10 == 0:
+        #     # Reset Game State
+        #     game_state = initialise_game_state(True)
+        #     cached_game_state = copy.copy(game_state)
+        # else:
+        #     game_state = copy.copy(cached_game_state)
 
     logging.info(f"\nTOTAL ITERATIONS COMPLETED: {total_iterations}")
 
