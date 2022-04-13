@@ -181,7 +181,7 @@ class Agent:
 def train():
     game_state = initialise_game_state()
 
-    agent = Agent(gamma=0.99, learning_rate=1e-4, epsilon=1.0, epsilon_min=0.01, epsilon_decrement=1e-4,
+    agent = Agent(gamma=0.99, learning_rate=5e-4, epsilon=1.0, epsilon_min=0.01, epsilon_decrement=1e-4,
                   n_actions=len(PSGS.GameState.available_actions), input_dims=[32], memory_size=1000000,
                   batch_size=64, target_network_replace=1000)
 
@@ -232,7 +232,8 @@ def train():
 
         total_iterations += iterations
 
-        game_state = initialise_game_state(True)
+        game_state.reset()
+        # game_state = initialise_game_state()
 
     logging.info(f"\nTOTAL ITERATIONS COMPLETED: {total_iterations}")
 
