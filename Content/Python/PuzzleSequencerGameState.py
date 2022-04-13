@@ -97,7 +97,7 @@ class GameState:
 
         # Update puzzle it is in the selected grid space
         elif self.selected_puzzle is not None:
-            reward, valid_move = self.selected_puzzle.update_puzzle(action)
+            reward, valid_move = self.selected_puzzle.update(action)
             puzzle_position = self.selected_puzzle.get_position()
             self.map[puzzle_position[0], puzzle_position[1]] = self.selected_puzzle.get_current_state()
 
@@ -132,6 +132,15 @@ class GameState:
         # reward = (reward - -1) / (1 - -1)
 
         return reward, is_terminal
+
+    def reset(self):
+        self.current_grid_pos_x = 0
+        self.current_grid_pos_y = 0
+        self.selected_puzzle = None
+        for puzzle in self.puzzles:
+            position = puzzle.get_position()
+            self.map[position[0], position[1]] = 0
+            puzzle.reset()
 
     def update_selected_puzzle(self):
         if self.map[self.current_grid_pos_x, self.current_grid_pos_y] != -1:

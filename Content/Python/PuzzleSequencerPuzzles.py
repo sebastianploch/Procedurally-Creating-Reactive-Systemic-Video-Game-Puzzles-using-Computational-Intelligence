@@ -26,7 +26,11 @@ class PuzzleObject:
         return self.depends_on
 
     # To be filled by derived class
-    def update_puzzle(self, action):
+    def update(self, action):
+        pass
+
+    # To be filled by derived class
+    def reset(self):
         pass
 
 
@@ -35,7 +39,7 @@ class Button(PuzzleObject):
         super().__init__(position, {"unpressed": 0, "pressed": 1})
         PSGS.GameState.add_available_action_as_key("press")
 
-    def update_puzzle(self, action):
+    def update(self, action):
         reward = 0
         valid_move = False
 
@@ -56,6 +60,10 @@ class Button(PuzzleObject):
 
         return reward, valid_move
 
+    def reset(self):
+        self.completed = False
+        self.current_state = self.available_states["unpressed"]
+
 
 class PressurePlate(PuzzleObject):
     def __init__(self, position, depends_on):
@@ -63,7 +71,7 @@ class PressurePlate(PuzzleObject):
         PSGS.GameState.add_available_action_as_key("activate")
         self.depends_on = depends_on
 
-    def update_puzzle(self, action):
+    def update(self, action):
         reward = 0
 
         # if self.completed:
@@ -80,13 +88,17 @@ class PressurePlate(PuzzleObject):
 
         return reward
 
+    def reset(self):
+        self.completed = False
+        self.current_state = self.available_states["de-activated"]
+
 
 class EzDoor(PuzzleObject):
     def __init__(self, position):
         super().__init__(position, {"closed": 0, "opened": 1})
         PSGS.GameState.add_available_action_as_key("open")
 
-    def update_puzzle(self, action):
+    def update(self, action):
         reward = 0
         valid_move = False
 
@@ -104,6 +116,10 @@ class EzDoor(PuzzleObject):
 
         return reward, valid_move
 
+    def reset(self):
+        self.completed = False
+        self.current_state = self.available_states["closed"]
+
 
 class Door(PuzzleObject):
     def __init__(self, position, depends_on):
@@ -111,7 +127,7 @@ class Door(PuzzleObject):
         PSGS.GameState.add_available_action_as_key("open")
         self.depends_on = depends_on
 
-    def update_puzzle(self, action):
+    def update(self, action):
         reward = 0
         valid_move = False
 
@@ -136,3 +152,7 @@ class Door(PuzzleObject):
             reward = PSC.INVALID_PUZZLE_REWARD
 
         return reward, valid_move
+
+    def reset(self):
+        self.completed = False
+        self.current_state = self.available_states["locked"]
