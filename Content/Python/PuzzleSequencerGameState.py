@@ -19,6 +19,7 @@ class GameState:
         self.current_grid_pos_x = 0
         self.current_grid_pos_y = 0
         self.selected_puzzle = None
+        # self.iterations = 0
 
     @staticmethod
     def add_available_action_as_dict(action: dict[str, int]):
@@ -44,6 +45,7 @@ class GameState:
     def step(self, action):
         is_terminal = False
         reward = 0
+        # self.iterations += 1
 
         # Early-out idle action
         if action == GameState.available_actions["idle"]:
@@ -186,6 +188,8 @@ class GameState:
 
     def get_map_state(self):
         array = np.array([self.get_map(), self.get_position_map()], dtype=np.float32).ravel()
-        # array = np.insert(np.array([self.get_map(), self.get_position_map()], dtype=np.float32).ravel(),
-        #                   -1, self.actions_taken)
+
+        # normalise_iterations = -(self.iterations / 1000)
+        # array = np.append(array, normalise_iterations)
+
         return array

@@ -16,6 +16,8 @@ import matplotlib.pyplot as plt
 import PuzzleSequencerGameState as PSGS
 import PuzzleSequencerPuzzles as PSP
 
+import wandb
+
 
 class ReplayBuffer:
     def __init__(self, max_size, input_shape):
@@ -101,6 +103,7 @@ class Agent:
         self.target_network_replace_counter = target_network_replace
         self.checkpoint_dir = checkpoint_dir
         self.learn_step_counter = 0
+        self.wandb_log_interval = 5
 
         self.action_space = [i for i in range(self.n_actions)]
         self.memory = ReplayBuffer(memory_size, input_dims)
@@ -177,15 +180,21 @@ class Agent:
         self.learn_step_counter += 1
         self.decrement_epsilon()
 
+        wandb.log({"Loss": loss,
+                   "Action_Histogram": wandb.Histogram(action)}, commit=False)
+
 
 def train():
+    current_time = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
+    wandb.init(project="fyp", entity="limanniel", name=f"fyp_ddqn_{current_time}")
+
     game_state = initialise_game_state()
 
     agent = Agent(gamma=0.99, learning_rate=5e-4, epsilon=1.0, epsilon_min=0.01, epsilon_decrement=1e-4,
                   n_actions=len(PSGS.GameState.available_actions), input_dims=[32], memory_size=1000000,
                   batch_size=64, target_network_replace=1000)
 
-    num_episodes = 700
+    num_episodes = 1000
     scores, epsilon_history = [], []
     total_iterations = 0
 
@@ -217,27 +226,22 @@ def train():
                   Terminal: {terminal} \
                   Epsilon: {agent.epsilon}")
 
-            if iterations >= 5000:
+            if iterations >= 1000:
                 break
 
+        # Collect and log episode data
         epsilon_history.append(agent.epsilon)
         scores.append(score)
         average_score = np.mean(scores[-100:])
-
-        logging.info(f"Episode: {i} \
-        Score: {score:.2f} \
-        Average Score: {average_score:.2f} \
-        Epsilon: {agent.epsilon:.2f} \
-        Iterations: {iterations}")
-
+        log_episode(i, score, average_score, agent.epsilon, iterations)
         total_iterations += iterations
 
+        # Restart game state
         game_state.reset()
-        # game_state = initialise_game_state()
+        # game_state = initialise_game_state(True)
 
     logging.info(f"\nTOTAL ITERATIONS COMPLETED: {total_iterations}")
 
-    current_time = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
     save_log(current_time)
 
     # Plot data
@@ -280,6 +284,19 @@ def initialise_game_state(randomise=False):
         # game_state.set_terminal_puzzle(ez_door)
 
     return game_state
+
+
+def log_episode(episode, score, average_score, epsilon, iterations):
+    logging.info(f"Episode: {episode} \
+    Score: {score:.2f} \
+    Average Score: {average_score:.2f} \
+    Epsilon: {epsilon:.2f} \
+    Iterations: {iterations}")
+
+    wandb.log({"Episode": episode,
+               "Score": score,
+               "Average Score": average_score,
+               "Iterations": iterations}, commit=True)
 
 
 def randomise_puzzle_location(game_state):
@@ -343,6 +360,8 @@ def plot_learning(x, scores, epsilons, filename):
 
     plt.savefig(save_path + filename, bbox_inches="tight", dpi=100)
 
+    wandb.log({"Graph": fig})
+
     # Show Graph
     plt.show(block=True)
 
@@ -375,6 +394,22 @@ def initialise_logging(agent, episodes):
     Epsilon: {agent.epsilon} | Epsilon Decrement: {agent.epsilon_decrement} | Epsilon End: {agent.epsilon_min} \
     Batch Size: {agent.batch_size} | Number Of Actions: {len(agent.action_space)} | Input Dimensions: {agent.input_dims} \
     Target Network Update Rate: {agent.target_network_replace_counter}\n")
+
+    wandb.config = {
+        "learning_rate": agent.learning_rate,
+        "episodes": episodes,
+        "batch_size": agent.batch_size,
+        "gamma": agent.gamma,
+        "epsilon": agent.epsilon,
+        "epsilon_min": agent.epsilon_min,
+        "epsilon_decrement": agent.epsilon_decrement,
+        "n_actions": agent.n_actions,
+        "input_dimensions": agent.input_dims,
+        "memory_size": agent.memory_size,
+        "target_network_replace": agent.target_network_replace_counter
+    }
+    wandb.watch(agent.q_eval)
+    wandb.watch(agent.q_next)
 
 
 def save_log(current_time):
