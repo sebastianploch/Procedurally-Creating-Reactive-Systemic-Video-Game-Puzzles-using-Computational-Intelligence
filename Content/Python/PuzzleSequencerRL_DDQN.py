@@ -191,10 +191,10 @@ def train():
     game_state = initialise_game_state()
 
     agent = Agent(gamma=0.99, learning_rate=5e-4, epsilon=1.0, epsilon_min=0.01, epsilon_decrement=1e-4,
-                  n_actions=len(PSGS.GameState.available_actions), input_dims=[32], memory_size=1000000,
+                  n_actions=len(PSGS.GameState.available_actions), input_dims=[48], memory_size=1000000,
                   batch_size=64, target_network_replace=1000)
 
-    num_episodes = 1000
+    num_episodes = 2000
     scores, epsilon_history = [], []
     total_iterations = 0
 
@@ -202,6 +202,7 @@ def train():
 
     for i in range(num_episodes):
         terminal = False
+        episode_not_solved = False
         observation = game_state.get_map_state()
         score = 0
         iterations = 0
@@ -227,6 +228,7 @@ def train():
                   Epsilon: {agent.epsilon}")
 
             if iterations >= 1000:
+                episode_not_solved = True
                 break
 
         # Collect and log episode data
@@ -236,12 +238,13 @@ def train():
         log_episode(i, score, average_score, agent.epsilon, iterations)
         total_iterations += iterations
 
-        # Restart game state
-        game_state.reset()
-        # game_state = initialise_game_state(True)
+        # Restart the game if it was not solved within the set iteration cap, otherwise generate new game
+        # if episode_not_solved:
+        #     game_state.reset()
+        # else:
+        game_state = initialise_game_state(True)
 
     logging.info(f"\nTOTAL ITERATIONS COMPLETED: {total_iterations}")
-
     save_log(current_time)
 
     # Plot data
@@ -268,6 +271,7 @@ def initialise_game_state(randomise=False):
         game_state.add_puzzle(door)
 
         # game_state.set_terminal_puzzle(ez_door)
+        game_state.set_starting_puzzle(button)
         game_state.set_terminal_puzzle(door)
 
     else:
@@ -279,8 +283,8 @@ def initialise_game_state(randomise=False):
         door = PSP.Door([2, 2], button)
         game_state.add_puzzle(door)
 
+        game_state.set_starting_puzzle(button)
         game_state.set_terminal_puzzle(door)
-
         # game_state.set_terminal_puzzle(ez_door)
 
     return game_state
@@ -293,8 +297,7 @@ def log_episode(episode, score, average_score, epsilon, iterations):
     Epsilon: {epsilon:.2f} \
     Iterations: {iterations}")
 
-    wandb.log({"Episode": episode,
-               "Score": score,
+    wandb.log({"Score": score,
                "Average Score": average_score,
                "Iterations": iterations}, commit=True)
 
@@ -395,7 +398,7 @@ def initialise_logging(agent, episodes):
     Batch Size: {agent.batch_size} | Number Of Actions: {len(agent.action_space)} | Input Dimensions: {agent.input_dims} \
     Target Network Update Rate: {agent.target_network_replace_counter}\n")
 
-    wandb.config = {
+    wandb.config.update({
         "learning_rate": agent.learning_rate,
         "episodes": episodes,
         "batch_size": agent.batch_size,
@@ -407,7 +410,7 @@ def initialise_logging(agent, episodes):
         "input_dimensions": agent.input_dims,
         "memory_size": agent.memory_size,
         "target_network_replace": agent.target_network_replace_counter
-    }
+    })
     wandb.watch(agent.q_eval)
     wandb.watch(agent.q_next)
 

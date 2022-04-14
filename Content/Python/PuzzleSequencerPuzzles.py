@@ -9,6 +9,7 @@ class PuzzleObject:
         self.available_states = available_states
         self.completed = False
         self.depends_on = None
+        self.connects_to = None
 
     def get_current_state(self):
         return self.current_state
@@ -122,10 +123,11 @@ class EzDoor(PuzzleObject):
 
 
 class Door(PuzzleObject):
-    def __init__(self, position, depends_on):
+    def __init__(self, position, depends_on: PuzzleObject):
         super().__init__(position, {"locked": 0, "closed": 1, "open": 2})
         PSGS.GameState.add_available_action_as_key("open")
         self.depends_on = depends_on
+        depends_on.connects_to = self
 
     def update(self, action):
         reward = 0

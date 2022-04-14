@@ -10,6 +10,7 @@ class GameState:
 
     def __init__(self, map_width, map_height):
         self.puzzles = []
+        self.starting_puzzle = None
         self.terminal_puzzle = None
         self.map_width = map_width
         self.map_height = map_height
@@ -19,6 +20,7 @@ class GameState:
         self.current_grid_pos_x = 0
         self.current_grid_pos_y = 0
         self.selected_puzzle = None
+        self.goal_puzzle = None
         # self.iterations = 0
 
     @staticmethod
@@ -109,11 +111,16 @@ class GameState:
                 puzzle_position = depends_on.get_position()
                 self.map[puzzle_position[0], puzzle_position[1]] = depends_on.get_current_state()
 
-            # Terminate if the terminal puzzle is reached and completed
-            if self.selected_puzzle is self.terminal_puzzle and self.selected_puzzle.is_completed():
-                is_terminal = True
-                reward = PSC.TERMINAL_PUZZLE_REWARD
-                return reward, is_terminal
+            # Update Goal
+            if self.selected_puzzle.is_completed():
+                if self.selected_puzzle is self.goal_puzzle:
+                    self.update_goal_puzzle()
+
+                # Terminate if the terminal puzzle is reached and completed
+                if self.selected_puzzle is self.terminal_puzzle:
+                    is_terminal = True
+                    reward = PSC.TERMINAL_PUZZLE_REWARD
+                    return reward, is_terminal
 
             if valid_move:
                 return reward, is_terminal
@@ -124,10 +131,16 @@ class GameState:
             reward = PSC.INVALID_PUZZLE_REWARD
             self.invalid_actions_taken += 1
 
+        # Determine whether getting closer to goal or further and adjust reward accordingly
+        goal_position = np.array(self.goal_puzzle.get_position())
+        current_position = np.array([self.current_grid_pos_x, self.current_grid_pos_y])
+        distance = np.linalg.norm(current_position - goal_position)
+        reward -= distance
+
         # Apply reward discount depending on the amount of actions taken
         # reward -= PSC.INVALID_ACTION_TAKEN_DISCOUNT * self.invalid_actions_taken
         # reward = max(reward, 0.)
-        reward -= PSC.INVALID_ACTION_TAKEN_DISCOUNT * self.invalid_actions_taken
+        # reward -= PSC.INVALID_ACTION_TAKEN_DISCOUNT * self.invalid_actions_taken
 
         # Normalise the reward using sigmoid
         # reward = 1 / (1 + np.exp(-reward))
@@ -139,6 +152,7 @@ class GameState:
         self.current_grid_pos_x = 0
         self.current_grid_pos_y = 0
         self.selected_puzzle = None
+        self.goal_puzzle = self.starting_puzzle
         for puzzle in self.puzzles:
             position = puzzle.get_position()
             self.map[position[0], position[1]] = 0
@@ -151,11 +165,21 @@ class GameState:
                     self.selected_puzzle = puzzle
                     break
 
+    def update_goal_puzzle(self):
+        self.goal_puzzle = self.goal_puzzle.connects_to
+
     def add_puzzle(self, puzzle):
         puzzle_x = puzzle.get_position()[0]
         puzzle_y = puzzle.get_position()[1]
         self.map[puzzle_x, puzzle_y] = 0
         self.puzzles.append(puzzle)
+
+    def set_starting_puzzle(self, puzzle):
+        self.starting_puzzle = puzzle
+        self.goal_puzzle = self.starting_puzzle
+
+    def get_starting_puzzle(self):
+        return self.starting_puzzle
 
     def set_terminal_puzzle(self, puzzle):
         self.terminal_puzzle = puzzle
@@ -186,9 +210,18 @@ class GameState:
         position_map[self.current_grid_pos_y, self.current_grid_pos_x] = 1
         return position_map
 
-    def get_map_state(self):
-        array = np.array([self.get_map(), self.get_position_map()], dtype=np.float32).ravel()
+    def get_goal_map(self):
+        goal_map = np.full((self.map_width, self.map_height), 0)
+        goal_position = (self.goal_puzzle.get_position() if self.goal_puzzle else self.terminal_puzzle.get_position())
+        goal_map[goal_position[0], goal_position[1]] = 1
+        return goal_map
 
+    def get_map_state(self):
+        # ar1 = self.get_map()
+        # ar2 = self.get_position_map()
+        # ar3 = self.get_goal_map()
+        # test = np.concatenate((self.get_map(), self.get_position_map(), self.get_goal_map()))
+        array = np.array([self.get_map(), self.get_position_map(), self.get_goal_map()], dtype=np.float32).ravel()
         # normalise_iterations = -(self.iterations / 1000)
         # array = np.append(array, normalise_iterations)
 
