@@ -85,7 +85,7 @@ class GameState:
                 # return reward, is_terminal
                 self.invalid_actions_taken += 1
             else:
-                reward = PSC.VALID_MOVE_REWARD
+                reward = PSC.INVALID_MOVE_REWARD
                 self.invalid_actions_taken += 1
 
         elif action == GameState.available_actions["move_right"]:

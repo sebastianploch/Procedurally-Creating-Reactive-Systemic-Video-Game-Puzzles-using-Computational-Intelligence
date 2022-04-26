@@ -78,10 +78,10 @@ class DDQN(nn.Module):
 
         return value, advantage
 
-    def save_checkpoint(self, episode=None):
+    def save_checkpoint(self, episode=None, time=None):
         print("... Saving Checkpoint ...")
-        if episode is not None:
-            torch.save(self.state_dict(), self.checkpoint_file + f"_{episode}")
+        if episode is not None and time is not None:
+            torch.save(self.state_dict(), self.checkpoint_file + f"_{time}_{episode}")
         else:
             torch.save(self.state_dict(), self.checkpoint_file)
 
@@ -140,9 +140,9 @@ class Agent:
         self.epsilon = self.epsilon - self.epsilon_decrement \
             if self.epsilon > self.epsilon_min else self.epsilon_min
 
-    def save_models(self, episode=None):
-        self.q_eval.save_checkpoint(episode)
-        self.q_next.save_checkpoint(episode)
+    def save_models(self, episode=None, time=None):
+        self.q_eval.save_checkpoint(episode, time)
+        self.q_next.save_checkpoint(episode, time)
 
     def load_models(self, episode=None):
         self.q_eval.load_checkpoint(episode)
@@ -200,7 +200,7 @@ def train():
                   n_actions=len(PSGS.GameState.available_actions), input_dims=[48], memory_size=1000000,
                   batch_size=64, target_network_replace=1000)
 
-    num_episodes = 2000
+    num_episodes = 4000
     scores, epsilon_history = [], []
     total_iterations = 0
 
@@ -251,7 +251,7 @@ def train():
         game_state = initialise_game_state(True)
 
         if i % 50 == 0:
-            agent.save_models(i)
+            agent.save_models(i, current_time)
 
     logging.info(f"\nTOTAL ITERATIONS COMPLETED: {total_iterations}")
     save_log(current_time)
