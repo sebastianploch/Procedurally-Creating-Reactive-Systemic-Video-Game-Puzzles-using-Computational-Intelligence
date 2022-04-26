@@ -78,13 +78,19 @@ class DDQN(nn.Module):
 
         return value, advantage
 
-    def save_checkpoint(self):
+    def save_checkpoint(self, episode=None):
         print("... Saving Checkpoint ...")
-        torch.save(self.state_dict(), self.checkpoint_file)
+        if episode is not None:
+            torch.save(self.state_dict(), self.checkpoint_file + f"_{episode}")
+        else:
+            torch.save(self.state_dict(), self.checkpoint_file)
 
-    def load_checkpoint(self):
+    def load_checkpoint(self, episode=None):
         print("... Loading Checkpoint ...")
-        self.load_state_dict(torch.load(self.checkpoint_file))
+        if episode is not None:
+            self.load_state_dict(torch.load(self.checkpoint_file + f"_{episode}"))
+        else:
+            self.load_state_dict(torch.load(self.checkpoint_file + f"_{episode}"))
 
 
 class Agent:
@@ -134,13 +140,13 @@ class Agent:
         self.epsilon = self.epsilon - self.epsilon_decrement \
             if self.epsilon > self.epsilon_min else self.epsilon_min
 
-    def save_models(self):
-        self.q_eval.save_checkpoint()
-        self.q_next.save_checkpoint()
+    def save_models(self, episode=None):
+        self.q_eval.save_checkpoint(episode)
+        self.q_next.save_checkpoint(episode)
 
-    def load_models(self):
-        self.q_eval.load_checkpoint()
-        self.q_next.load_checkpoint()
+    def load_models(self, episode=None):
+        self.q_eval.load_checkpoint(episode)
+        self.q_next.load_checkpoint(episode)
 
     def learn(self):
         if self.memory.memory_counter < self.batch_size:
@@ -202,7 +208,7 @@ def train():
 
     for i in range(num_episodes):
         terminal = False
-        episode_not_solved = False
+        # episode_not_solved = False
         observation = game_state.get_map_state()
         score = 0
         iterations = 0
@@ -228,7 +234,7 @@ def train():
                   Epsilon: {agent.epsilon}")
 
             if iterations >= 1000:
-                episode_not_solved = True
+                # episode_not_solved = True
                 break
 
         # Collect and log episode data
@@ -244,6 +250,9 @@ def train():
         # else:
         game_state = initialise_game_state(True)
 
+        if i % 50 == 0:
+            agent.save_models(i)
+
     logging.info(f"\nTOTAL ITERATIONS COMPLETED: {total_iterations}")
     save_log(current_time)
 
@@ -253,7 +262,51 @@ def train():
 
 
 def test():
-    pass
+    game_state = initialise_game_state()
+    agent = Agent(gamma=0.99, learning_rate=5e-4, epsilon=1.0, epsilon_min=0.01, epsilon_decrement=1e-4,
+                  n_actions=len(PSGS.GameState.available_actions), input_dims=[48], memory_size=1000000,
+                  batch_size=64, target_network_replace=1000)
+    agent.load_models(1950)
+    agent.q_eval.eval()
+    agent.q_next.eval()
+
+    num_episodes = 10000
+    scores = []
+    total_iterations = 0
+
+    with torch.no_grad():
+        for i in range(num_episodes):
+            terminal = False
+            observation = game_state.get_map_state()
+            score = 0
+            iterations = 0
+
+            while not terminal:
+                action = agent.choose_action(observation)
+                reward, terminal = game_state.step(action)
+                observation_ = game_state.get_map_state()
+
+                score += reward
+                iterations += 1
+
+                observation = observation_
+                # print(f"Iteration: {iterations} \
+                #                   Action: {action} \
+                #                   Reward: {reward} \
+                #                   Score: {score} \
+                #                   Terminal: {terminal}")
+
+            total_iterations += iterations
+            scores.append(score)
+            average_score = np.mean(scores[-100:])
+            print(f"Episode: {i} \
+            Score: {score:.2f} \
+            Average Score: {average_score:.2f} \
+            Iterations: {iterations}")
+
+            game_state = initialise_game_state(True)
+
+    print(f"\nTOTAL ITERATIONS COMPLETED: {total_iterations}")
 
 
 def initialise_game_state(randomise=False):
