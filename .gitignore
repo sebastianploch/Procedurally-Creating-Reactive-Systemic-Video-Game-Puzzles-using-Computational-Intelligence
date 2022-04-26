@@ -94,6 +94,7 @@ Content/Python/output.txt
 Content/Python/Graphs/
 Content/Python/Logs/
 Content/Python/Pre-Trained Models/
+Content/Python/Pre-Trained Models DDQN/
 Content/Python/Logs DDQN/
 Content/Python/Graphs DDQN/
 Content/Python/wandb/
