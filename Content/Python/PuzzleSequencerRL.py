@@ -1,201 +1,346 @@
-import copy
-import os.path
+import os
+import sys
+import random
+import logging
 import shutil
+from datetime import datetime
+
+import numpy as np
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+
+import wandb
+import matplotlib.pyplot as plt
 
 import PuzzleSequencerGameState as PSGS
 import PuzzleSequencerPuzzles as PSP
 
-# import unreal # Disabled print :c
-import random
-import sys
-from datetime import datetime
-import logging
-from collections import namedtuple
 
-import numpy as np
+class ExperienceReplay:
+    def __init__(self, max_size, input_shape):
+        self.memory_size = max_size
+        self.memory_counter = 0
 
-import torch
-import torch.nn as nn
-import torch.optim as optim
-import torch.nn.functional as F
-
-import matplotlib
-import matplotlib.pyplot as plt
-
-
-# ----------------------------- NEURAL NETWORK MODEL -----------------------------
-class DQN(nn.Module):
-    def __init__(self, learning_rate, input_dims, layer1_dims, layer2_dims, n_actions):
-        super(DQN, self).__init__()
-        self.learning_rate = learning_rate
-        self.input_dims = input_dims
-        self.layer1_dims = layer1_dims
-        self.layer2_dims = layer2_dims
-        self.n_actions = n_actions
-
-        # Layer Set-up
-        self.layer1 = nn.Linear(*self.input_dims, self.layer1_dims)
-        self.relu1 = nn.ReLU(inplace=True)
-        self.layer2 = nn.Linear(self.layer1_dims, self.layer2_dims)
-        self.relu2 = nn.ReLU(inplace=True)
-        self.layer3 = nn.Linear(self.layer2_dims, self.n_actions)
-
-        self.optimiser = optim.Adam(self.parameters(), lr=learning_rate)
-        # self.optimiser = optim.RMSprop(self.parameters(), lr=learning_rate)
-        self.loss = nn.MSELoss()
-        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-        self.to(self.device)
-
-    def forward(self, x):
-        out = self.layer1(x)
-        out = self.relu1(out)
-        out = self.layer2(out)
-        out = self.relu2(out)
-        out = self.layer3(out)
-        return out
-
-
-# ------------------------------------- AGENT ------------------------------------
-class Agent:
-    layer1_dims = 256
-    layer2_dims = 256
-
-    def __init__(self, gamma, epsilon, learning_rate, input_dims, batch_size, n_actions,
-                 max_memory_size=100000, target_model_update_rate=1000, epsilon_end=0.01, epsilon_dec=5e-4):
-        self.gamma = gamma
-        self.epsilon = epsilon
-        self.epsilon_end = epsilon_end
-        self.epsilon_dec = epsilon_dec
-        self.learning_rate = learning_rate
-        self.input_dims = input_dims
-        self.action_space = [i for i in range(n_actions)]
-        self.batch_size = batch_size
-        self.memory_size = max_memory_size
-        self.target_model_update_rate = target_model_update_rate
-        self.memory_cntr = 0
-        self.iterations = 0
-
-        self.model = DQN(learning_rate, input_dims, self.layer1_dims, self.layer2_dims, n_actions)
-        self.target_model = DQN(learning_rate, input_dims, self.layer1_dims, self.layer2_dims, n_actions)
-
-        # Replay Memory
-        self.state_memory = np.zeros((self.memory_size, *input_dims), dtype=np.float32)
-        self.new_state_memory = np.zeros((self.memory_size, *input_dims), dtype=np.float32)
-        self.action_memory = np.zeros(self.memory_size, dtype=np.int32)
+        self.state_memory = np.zeros((self.memory_size, *input_shape), dtype=np.float32)
+        self.new_state_memory = np.zeros((self.memory_size, *input_shape), dtype=np.float32)
+        self.action_memory = np.zeros(self.memory_size, dtype=np.int64)
         self.reward_memory = np.zeros(self.memory_size, dtype=np.float32)
         self.terminal_memory = np.zeros(self.memory_size, dtype=bool)
 
-    def store_transition(self, action, state, state_, reward, terminal):
-        index = self.memory_cntr % self.memory_size
-        self.action_memory[index] = action
+    def store_transition(self, state, state_, action, reward, terminal):
+        index = self.memory_counter % self.memory_size
+
         self.state_memory[index] = state
         self.new_state_memory[index] = state_
+        self.action_memory[index] = action
         self.reward_memory[index] = reward
         self.terminal_memory[index] = terminal
 
-        self.memory_cntr += 1
+        self.memory_counter += 1
 
-    def choose_action(self, map_state):
-        # Exploitation
-        if np.random.random() > self.epsilon:
-            state = torch.from_numpy(map_state).to(self.model.device)
-            actions = self.model.forward(state)
-            action = torch.argmax(actions).item()
-        # Exploration
+    def sample_buffer(self, batch_size):
+        max_memory = min(self.memory_counter, self.memory_size)
+        batch = np.random.choice(max_memory, batch_size, replace=False)
+
+        states = self.state_memory[batch]
+        states_ = self.new_state_memory[batch]
+        actions = self.action_memory[batch]
+        rewards = self.reward_memory[batch]
+        terminals = self.terminal_memory[batch]
+
+        return states, states_, actions, rewards, terminals
+
+
+class DDQN(nn.Module):
+    def __init__(self, learning_rate, n_actions, name, input_dims, save_dir):
+        super(DDQN, self).__init__()
+        self.save_dir = save_dir
+        self.filename = os.path.join(self.save_dir, name)
+
+        self.layer1 = nn.Linear(*input_dims, 512)
+        self.value = nn.Linear(512, 1)  # Value stream
+        self.advantage = nn.Linear(512, n_actions)  # Advantage action stream
+
+        self.optimiser = optim.Adam(self.parameters(), lr=learning_rate)
+        self.loss = nn.MSELoss()
+
+        # Decide whether to run on GPU or CPU
+        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        self.to(self.device)
+
+    def forward(self, state):
+        flat_layer1 = F.relu(self.layer1(state))
+        value = self.value(flat_layer1)
+        advantage = self.advantage(flat_layer1)
+
+        return value, advantage
+
+    def save_model(self, episode, time):
+        print("... Saving Checkpoint ...")
+        torch.save(self.state_dict(), self.filename + f"_{time}_{episode}")
+
+    def load_model(self, model_name):
+        print("... Loading Checkpoint ...")
+        self.load_state_dict(torch.load(self.filename + f"_{model_name}"))
+
+
+class Agent:
+    def __init__(self, gamma, learning_rate, epsilon, epsilon_min, epsilon_decrement,
+                 n_actions, input_dims, memory_size, batch_size, target_network_replace=1000,
+                 checkpoint_dir="Pre-Trained Models DDQN"):
+        self.gamma = gamma
+        self.learning_rate = learning_rate
+        self.epsilon = epsilon
+        self.epsilon_min = epsilon_min
+        self.epsilon_decrement = epsilon_decrement
+        self.n_actions = n_actions
+        self.input_dims = input_dims
+        self.memory_size = memory_size
+        self.batch_size = batch_size
+        self.target_network_replace_counter = target_network_replace
+        self.save_dir = checkpoint_dir
+        self.learn_step_counter = 0
+        self.wandb_log_interval = 5
+
+        self.action_space = [i for i in range(self.n_actions)]
+        self.memory = ExperienceReplay(memory_size, input_dims)
+
+        self.q_eval = DDQN(self.learning_rate, self.n_actions, input_dims=self.input_dims,
+                           name="DDQN_Eval", save_dir=self.save_dir)
+        self.q_next = DDQN(self.learning_rate, self.n_actions, input_dims=self.input_dims,
+                           name="DDQN_Next", save_dir=self.save_dir)
+
+        # Ensure that the model save path exists
+        dir_path = os.path.dirname(os.path.abspath(__file__)) + self.save_dir
+        if not os.path.exists(dir_path):
+            os.makedirs(self.save_dir)
+
+    def choose_action(self, observation):
+        if np.random.random() > self.epsilon:  # Greedy Action
+            state = torch.tensor([observation], dtype=torch.float32, device=self.q_eval.device)
+            _, advantage = self.q_eval.forward(state)
+            action = torch.argmax(advantage).item()
         else:
             action = np.random.choice(self.action_space)
 
         return action
 
-    def set_model(self, model):
-        self.model = model
+    def store_transition(self, state, state_, action, reward, terminal):
+        self.memory.store_transition(state, state_, action, reward, terminal)
+
+    def replace_target_network(self):
+        if self.learn_step_counter % self.target_network_replace_counter == 0:
+            self.q_next.load_state_dict(self.q_eval.state_dict())
+
+    def decrement_epsilon(self):
+        self.epsilon = self.epsilon - self.epsilon_decrement \
+            if self.epsilon > self.epsilon_min else self.epsilon_min
+
+    def save_models(self, episode, time):
+        self.q_eval.save_model(episode, time)
+        self.q_next.save_model(episode, time)
+
+    def load_models(self, model_name):
+        self.q_eval.load_model(model_name)
+        self.q_next.load_model(model_name)
 
     def learn(self):
-        # Early-out batch is insufficient
-        if self.memory_cntr < self.batch_size:
+        if self.memory.memory_counter < self.batch_size:
             return
 
-        # self.model.optimiser.zero_grad()
+        self.q_eval.optimiser.zero_grad()
+        self.replace_target_network()
 
-        max_memory = min(self.memory_cntr, self.memory_size)
+        state, new_state, action, reward, terminal = self.memory.sample_buffer(self.batch_size)
 
-        batch = np.random.choice(max_memory, self.batch_size, replace=False)
-        batch_index = np.arange(self.batch_size, dtype=np.int32)
+        states = torch.tensor(state, device=self.q_eval.device)
+        new_states = torch.tensor(new_state, device=self.q_eval.device)
+        actions = torch.tensor(action, device=self.q_eval.device)
+        rewards = torch.tensor(reward, device=self.q_eval.device)
+        terminals = torch.tensor(terminal, device=self.q_eval.device)
 
-        action_batch = self.action_memory[batch]
-        state_batch = torch.tensor(self.state_memory[batch], device=self.model.device)
-        new_state_batch = torch.tensor(self.new_state_memory[batch], device=self.model.device)
-        reward_batch = torch.tensor(self.reward_memory[batch], device=self.model.device)
-        terminal_batch = torch.tensor(self.terminal_memory[batch], device=self.model.device)
+        indices = np.arange(self.batch_size)
 
-        # Calculate Q
-        q_value = self.model.forward(state_batch)[batch_index, action_batch]
-        # q_next_value = self.model.forward(new_state_batch)  # this can be turned into target network to stabilise
-        q_next_value = self.target_model(new_state_batch)
+        value_state, advantage_state = self.q_eval.forward(states)
+        value_state_, advantage_state_ = self.q_next.forward(new_states)
+        value_state_eval, advantage_state_eval = self.q_eval.forward(new_states)
 
-        q_next_value[terminal_batch] = 0.0
+        q_prediction = torch.add(value_state,
+                                 (advantage_state - advantage_state.mean(dim=1, keepdim=True)))[indices, actions]
+        q_next = torch.add(value_state_,
+                           (advantage_state_ - advantage_state_.mean(dim=1, keepdim=True)))
+        q_evaluation = torch.add(value_state_eval,
+                                 (advantage_state_eval - advantage_state_eval.mean(dim=1, keepdim=True)))
 
-        q_target = reward_batch + self.gamma * torch.max(q_next_value, dim=1)[0]
+        max_actions = torch.argmax(q_evaluation, dim=1)
+        q_next[terminals] = 0.0
+        q_target = rewards + self.gamma * q_next[indices, max_actions]
 
-        # Calculate Loss
-        loss = self.model.loss(q_target, q_value).to(self.model.device)
+        loss = self.q_eval.loss(q_target, q_prediction).to(self.q_eval.device)
         loss.backward()
-        self.model.optimiser.step()
+        self.q_eval.optimiser.step()
+        self.learn_step_counter += 1
+        self.decrement_epsilon()
 
-        self.epsilon = self.epsilon - self.epsilon_dec if self.epsilon > self.epsilon_end \
-            else self.epsilon_end
-
-        if self.iterations % self.target_model_update_rate == 0:
-            self.target_model.load_state_dict(self.model.state_dict())
-
-        self.iterations += 1
+        wandb.log({"Loss": loss,
+                   "Action_Histogram": wandb.Histogram(action)}, commit=False)
 
 
-# ---------------------------------- GAME STATE ----------------------------------
+def train():
+    current_time = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
+    wandb.init(project="fyp", entity="limanniel", name=f"fyp_ddqn_{current_time}")
+
+    game_state = initialise_game_state()
+
+    agent = Agent(gamma=0.99, learning_rate=5e-4, epsilon=1.0, epsilon_min=0.01, epsilon_decrement=1e-4,
+                  n_actions=len(PSGS.GameState.available_actions), input_dims=[48], memory_size=1000000,
+                  batch_size=64, target_network_replace=1000)
+
+    num_episodes = 5000
+    scores, epsilon_history = [], []
+    total_iterations = 0
+
+    initialise_logging(agent, num_episodes)
+
+    for i in range(num_episodes):
+        terminal = False
+        observation = game_state.get_map_state()
+        score = 0
+        iterations = 0
+
+        while not terminal:
+            action = agent.choose_action(observation)
+            reward, terminal = game_state.step(action)
+            observation_ = game_state.get_map_state()
+
+            score += reward
+            iterations += 1
+
+            agent.store_transition(observation, observation_, action, reward, terminal)
+            agent.learn()
+
+            observation = observation_
+
+            # print(f"Iteration: {iterations} \
+            #       Action: {action} \
+            #       Reward: {reward} \
+            #       Score: {score} \
+            #       Terminal: {terminal} \
+            #       Epsilon: {agent.epsilon}")
+
+            if iterations >= 1000:
+                break
+
+        # Collect and log episode data
+        epsilon_history.append(agent.epsilon)
+        scores.append(score)
+        average_score = np.mean(scores[-100:])
+        log_episode(i, score, average_score, agent.epsilon, iterations)
+        total_iterations += iterations
+
+        game_state = initialise_game_state(True)
+
+        if i % 50 == 0:
+            agent.save_models(i, current_time)
+
+    logging.info(f"\nTOTAL ITERATIONS COMPLETED: {total_iterations}")
+    save_log(current_time)
+
+    # Plot data
+    x = [i + 1 for i in range(num_episodes)]
+    plot_learning(x, scores, epsilon_history, f"Output_Graph_EpsScore_{current_time}.png")
+
+
+def test():
+    game_state = initialise_game_state()
+    agent = Agent(gamma=0.99, learning_rate=5e-4, epsilon=0.0, epsilon_min=0.01, epsilon_decrement=1e-4,
+                  n_actions=len(PSGS.GameState.available_actions), input_dims=[48], memory_size=1000000,
+                  batch_size=64, target_network_replace=1000)
+
+    agent.load_models("28-04-2022_17-57-13_3950")
+    agent.q_eval.eval()
+    agent.q_next.eval()
+
+    num_episodes = 3000
+    failed_episodes = 0
+    scores = []
+    total_iterations = 0
+
+    with torch.no_grad():
+        for i in range(num_episodes):
+            terminal = False
+            observation = game_state.get_map_state()
+            score = 0
+            iterations = 0
+
+            while not terminal:
+                action = agent.choose_action(observation)
+                reward, terminal = game_state.step(action)
+                observation_ = game_state.get_map_state()
+
+                score += reward
+                iterations += 1
+
+                observation = observation_
+
+                if iterations > 1000:
+                    failed_episodes += 1
+                    break
+
+            total_iterations += iterations
+            scores.append(score)
+            average_score = np.mean(scores[-100:])
+            print(f"Episode: {i} \
+            Score: {score:.2f} \
+            Average Score: {average_score:.2f} \
+            Iterations: {iterations}")
+
+            game_state = initialise_game_state(True)
+
+    print(f"\n[{num_episodes - failed_episodes}/{num_episodes}] EPISODES FINISHED")
+    print(f"\nTOTAL ITERATIONS COMPLETED: {total_iterations}")
+
+
 def initialise_game_state(randomise=False):
     game_state = PSGS.GameState(4, 4)
 
     if randomise:
         x, y = randomise_puzzle_location(game_state)
-        ez_door = PSP.EzDoor([x, y])
-        game_state.add_puzzle(ez_door)
-        game_state.set_terminal_puzzle(ez_door)
-        # x, y = randomise_puzzle_location(game_state)
-        # button = PSP.Button([x, y])
-        # game_state.add_puzzle(button)
-        #
-        # # x, y = randomise_puzzle_location(game_state)
-        # # pressure_plate = PSP.PressurePlate([x, y], button)
-        # # game_state.add_puzzle(pressure_plate)
-        #
-        # x, y = randomise_puzzle_location(game_state)
-        # door = PSP.Door([x, y], button)
-        # game_state.add_puzzle(door)
-        #
-        # game_state.set_terminal_puzzle(door)
+        button = PSP.Button([x, y])
+        game_state.add_puzzle(button)
+
+        x, y = randomise_puzzle_location(game_state)
+        door = PSP.Door([x, y], button)
+        game_state.add_puzzle(door)
+
+        game_state.set_starting_puzzle(button)
+        game_state.set_terminal_puzzle(door)
 
     else:
-        ez_door = PSP.EzDoor([1, 1])
-        game_state.add_puzzle(ez_door)
-        game_state.set_terminal_puzzle(ez_door)
-        # # Init puzzles
-        # button = PSP.Button([1, 1])
-        # # pressure_plate = PSP.PressurePlate([3, 2], button)
-        # door = PSP.Door([3, 3], button)
-        #
-        # # Set terminal puzzle
-        # game_state.set_terminal_puzzle(door)
-        #
-        # # Add puzzles to game state
-        # game_state.add_puzzle(button)
-        # # game_state.add_puzzle(pressure_plate)
-        # game_state.add_puzzle(door)
-        # # print(game_state.get_map())
+        button = PSP.Button([1, 1])
+        game_state.add_puzzle(button)
 
-    # print("Available actions for the game state:")
-    # print(PSGS.GameState.available_actions)
-    # print("\n")
+        door = PSP.Door([2, 2], button)
+        game_state.add_puzzle(door)
+
+        game_state.set_starting_puzzle(button)
+        game_state.set_terminal_puzzle(door)
+
     return game_state
+
+
+def log_episode(episode, score, average_score, epsilon, iterations):
+    logging.info(f"Episode: {episode} \
+    Score: {score:.2f} \
+    Average Score: {average_score:.2f} \
+    Epsilon: {epsilon:.2f} \
+    Iterations: {iterations}")
+
+    wandb.log({"Score": score,
+               "Average Score": average_score,
+               "Iterations": iterations}, commit=True)
 
 
 def randomise_puzzle_location(game_state):
@@ -210,143 +355,6 @@ def randomise_puzzle_location(game_state):
     return [rand_x, rand_y]
 
 
-# -------------------------------------- TEST-------------------------------------
-def test():
-    game_state = initialise_game_state()
-    agent = Agent(gamma=0.99, epsilon=0.01, batch_size=32, n_actions=len(game_state.available_actions),
-                  input_dims=[32], learning_rate=0.0001, epsilon_end=0.01, epsilon_dec=2e-4,
-                  target_model_update_rate=500)
-    model = load_model("Pre-Trained Models/model_episode_140.pth", game_state)
-    agent.set_model(model)
-
-    n_games = 10000
-
-    total_iterations = 0
-    scores, average_scores = [], []
-
-    # Disable gradient computation for model evaluation
-    with torch.no_grad():
-        for episode in range(n_games):
-            score = 0
-            iterations = 0
-            terminal = False
-            map_state = game_state.get_map_state()
-
-            while not terminal:
-                action = agent.choose_action(map_state)
-                reward, terminal = game_state.step(action)
-
-                new_map_state = game_state.get_map_state()
-
-                score += reward
-                iterations += 1
-
-                map_state = new_map_state
-                print(f"Iteration: {iterations} Action: {action} Reward: {reward} Score: {score} Terminal: {terminal}")
-
-            scores.append(score)
-            average_score = np.mean(scores[-10:])
-            average_scores.append(average_score)
-
-            print(f"Episode: [{episode}/{n_games}] \
-                    Score: {score:.2f} \
-                    Average Score: {average_score:.2f} \
-                    Iterations: {iterations}")
-
-            total_iterations += iterations
-            game_state = initialise_game_state()
-    print(f"TOTAL ITERATIONS: {total_iterations}")
-
-
-# ------------------------------------- TRAIN ------------------------------------
-def train():
-    game_state = initialise_game_state()
-    cached_game_state = copy.copy(game_state)
-
-    agent = Agent(gamma=0.99, epsilon=1.0, batch_size=32, n_actions=len(game_state.available_actions),
-                  input_dims=[32], learning_rate=0.0001, epsilon_end=0.01, epsilon_dec=2e-5,
-                  target_model_update_rate=500)
-
-    n_games = 1000  # amount of complete game episodes
-    model_save_rate = 10
-
-    initialise_model_saving()
-    initialise_logging(agent, n_games)
-
-    total_iterations = 0
-    scores, average_scores, epsilon_history = [], [], []
-
-    for episode in range(n_games):
-        score = 0
-        terminal = False
-        iterations = 0
-        map_state = game_state.get_map_state()
-
-        # Continue until game reached terminal state
-        while not terminal:
-            action = agent.choose_action(map_state)
-            reward, terminal = game_state.step(action)
-            new_map_state = game_state.get_map_state()
-
-            score += reward
-            iterations += 1
-
-            agent.store_transition(action, map_state, new_map_state, reward, terminal)
-            agent.learn()
-
-            map_state = new_map_state
-
-            print(
-                f"Iteration: {iterations} \
-                Action: {action} \
-                Reward: {reward} \
-                Score: {score} \
-                Terminal: {terminal} \
-                Epsilon: {agent.epsilon}")
-
-            if iterations >= 500:
-                break
-
-        # Collect episode data
-        scores.append(score)
-        epsilon_history.append(agent.epsilon)
-
-        average_score = np.mean(scores[-10:])
-        average_scores.append(average_score)
-
-        logging.info(f"Episode: {episode} \
-        Score: {score:.2f} \
-        Average Score: {average_score:.2f} \
-        Epsilon: {agent.epsilon:.2f} \
-        Iterations: {iterations}")
-
-        total_iterations += iterations
-
-        # Save model
-        if episode % model_save_rate == 0:
-            save_model(agent.model, episode)
-
-        # Reset Game State
-        game_state = initialise_game_state(True)
-
-        # if agent.epsilon > 0.5 or episode % 10 == 0:
-        #     # Reset Game State
-        #     game_state = initialise_game_state(True)
-        #     cached_game_state = copy.copy(game_state)
-        # else:
-        #     game_state = copy.copy(cached_game_state)
-
-    logging.info(f"\nTOTAL ITERATIONS COMPLETED: {total_iterations}")
-
-    current_time = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
-    save_log(current_time)
-
-    # Plot data
-    x = [i + 1 for i in range(n_games)]
-    plot_learning(x, scores, epsilon_history, f"Output_Graph_EpsScore_{current_time}.png")
-
-
-# ------------------------------------- PLOT -------------------------------------
 def plot_learning(x, scores, epsilons, filename):
     fig = plt.figure(figsize=(15, 10), dpi=100)
     ax = fig.add_subplot(111, label="Epsilon")
@@ -369,15 +377,14 @@ def plot_learning(x, scores, epsilons, filename):
         running_avg[t] = np.mean(scores[max(0, t - window):(t + 1)])
 
     # Exponential Moving Average
-    ema = numpy_ewma_vectorized_v2(np.array(scores), window)
+    ema = exponential_running_average(np.array(scores), window)
 
     # Plot running and exponential average + raw score
     ax2.plot(x, running_avg, color='orange', linestyle='solid', marker='o', markerfacecolor='orange', markersize=8,
              label="Running Average Score")
     ax2.plot(x, ema, color='green', linestyle='solid', marker='o', markerfacecolor='green', markersize=8,
              label="Exponential Moving Average Score")
-    ax2.plot(x, scores, color='red', linestyle='solid', marker='o', markerfacecolor='red', markersize=8,
-             label="Raw Score")
+    ax2.plot(x, scores, color='red', linestyle='--', markerfacecolor='red', label="Raw Score")
     ax2.axes.get_xaxis().set_visible(False)
     ax2.yaxis.tick_right()
     ax2.yaxis.set_label_position('right')
@@ -389,23 +396,19 @@ def plot_learning(x, scores, epsilons, filename):
     fig.subplots_adjust(top=0.90)
 
     # Save graph
-    save_path = os.path.dirname(os.path.abspath(__file__)) + "/Graphs/"
+    save_path = os.path.dirname(os.path.abspath(__file__)) + "/Graphs DDQN/"
     if not os.path.exists(save_path):
-        os.makedirs("Graphs")
+        os.makedirs("Graphs DDQN")
 
     plt.savefig(save_path + filename, bbox_inches="tight", dpi=100)
+    wandb.log({"Graph": fig})
 
     # Show Graph
     plt.show(block=True)
 
 
-def plot_testing():
-    fig = plt.figure(figsize=(15, 10), dpi=100)
-    ax = fig.add_subplot(111, label="")
-
-
-# https://localcoder.org/numpy-version-of-exponential-weighted-moving-average-equivalent-to-pandas-ewm
-def numpy_ewma_vectorized_v2(data, window):
+# based on https://localcoder.org/numpy-version-of-exponential-weighted-moving-average-equivalent-to-pandas-ewm
+def exponential_running_average(data, window):
     alpha = 2 / (window + 1.0)
     alpha_rev = 1 - alpha
     n = data.shape[0]
@@ -422,44 +425,39 @@ def numpy_ewma_vectorized_v2(data, window):
     return out
 
 
-# ------------------------------------- LOGGING ----------------------------------
 def initialise_logging(agent, episodes):
-    save_path = os.path.dirname(os.path.abspath(__file__)) + "/Logs/"
+    save_path = os.path.dirname(os.path.abspath(__file__)) + "/Logs DDQN/"
     if not os.path.exists(save_path):
-        os.makedirs("Logs")
+        os.makedirs("Logs DDQN")
     logging.basicConfig(filename=save_path + f'output_recent.txt', level=logging.INFO, format='', filemode='w')
 
     logging.info(f"Episodes: {episodes} | Gamma: {agent.gamma} | Learning Rate: {agent.learning_rate} \
-    Epsilon: {agent.epsilon} | Epsilon Decrement: {agent.epsilon_dec} | Epsilon End: {agent.epsilon_end} \
+    Epsilon: {agent.epsilon} | Epsilon Decrement: {agent.epsilon_decrement} | Epsilon End: {agent.epsilon_min} \
     Batch Size: {agent.batch_size} | Number Of Actions: {len(agent.action_space)} | Input Dimensions: {agent.input_dims} \
-    Target Network Update Rate: {agent.target_model_update_rate}\n")
+    Target Network Update Rate: {agent.target_network_replace_counter}\n")
+
+    wandb.config.update({
+        "learning_rate": agent.learning_rate,
+        "episodes": episodes,
+        "batch_size": agent.batch_size,
+        "gamma": agent.gamma,
+        "epsilon": agent.epsilon,
+        "epsilon_min": agent.epsilon_min,
+        "epsilon_decrement": agent.epsilon_decrement,
+        "n_actions": agent.n_actions,
+        "input_dimensions": agent.input_dims,
+        "memory_size": agent.memory_size,
+        "target_network_replace": agent.target_network_replace_counter
+    })
+    wandb.watch(agent.q_eval)
+    wandb.watch(agent.q_next)
 
 
 def save_log(current_time):
-    save_path = os.path.dirname(os.path.abspath(__file__)) + "/Logs/"
+    save_path = os.path.dirname(os.path.abspath(__file__)) + "/Logs DDQN/"
     shutil.copyfile(save_path + f'output_recent.txt', save_path + f'output_{current_time}.txt')
 
 
-def initialise_model_saving():
-    save_path = os.path.dirname(os.path.abspath(__file__)) + "/Pre-Trained Models/"
-    if not os.path.exists(save_path):
-        os.makedirs("Pre-Trained Models")
-
-
-# Save model's state dictionary for inference
-def save_model(model, episode):
-    torch.save(model.state_dict(), f"Pre-Trained Models/model_episode_{str(episode)}.pth")
-
-
-# Load model's state dictionary for inference
-def load_model(model_path, game_state):
-    model = DQN(0.001, [32], 256, 256, len(game_state.available_actions))
-    model.load_state_dict(torch.load(model_path))
-    model.eval()
-    return model
-
-
-# ------------------------------------- MAIN -------------------------------------
 def main(mode):
     if mode == "train":
         train()
