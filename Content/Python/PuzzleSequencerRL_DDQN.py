@@ -85,12 +85,12 @@ class DDQN(nn.Module):
         else:
             torch.save(self.state_dict(), self.checkpoint_file)
 
-    def load_checkpoint(self, episode=None):
+    def load_checkpoint(self, model_name):
         print("... Loading Checkpoint ...")
-        if episode is not None:
-            self.load_state_dict(torch.load(self.checkpoint_file + f"_{episode}"))
-        else:
-            self.load_state_dict(torch.load(self.checkpoint_file + f"_{episode}"))
+        # if episode is not None:
+        #     self.load_state_dict(torch.load(self.checkpoint_file + f"_{episode}"))
+        # else:
+        self.load_state_dict(torch.load(self.checkpoint_file + f"_{model_name}"))
 
 
 class Agent:
@@ -144,9 +144,9 @@ class Agent:
         self.q_eval.save_checkpoint(episode, time)
         self.q_next.save_checkpoint(episode, time)
 
-    def load_models(self, episode=None):
-        self.q_eval.load_checkpoint(episode)
-        self.q_next.load_checkpoint(episode)
+    def load_models(self, model_name):
+        self.q_eval.load_checkpoint(model_name)
+        self.q_next.load_checkpoint(model_name)
 
     def learn(self):
         if self.memory.memory_counter < self.batch_size:
@@ -200,7 +200,7 @@ def train():
                   n_actions=len(PSGS.GameState.available_actions), input_dims=[48], memory_size=1000000,
                   batch_size=64, target_network_replace=1000)
 
-    num_episodes = 4000
+    num_episodes = 5000
     scores, epsilon_history = [], []
     total_iterations = 0
 
@@ -226,12 +226,12 @@ def train():
 
             observation = observation_
 
-            print(f"Iteration: {iterations} \
-                  Action: {action} \
-                  Reward: {reward} \
-                  Score: {score} \
-                  Terminal: {terminal} \
-                  Epsilon: {agent.epsilon}")
+            # print(f"Iteration: {iterations} \
+            #       Action: {action} \
+            #       Reward: {reward} \
+            #       Score: {score} \
+            #       Terminal: {terminal} \
+            #       Epsilon: {agent.epsilon}")
 
             if iterations >= 1000:
                 # episode_not_solved = True
@@ -263,14 +263,16 @@ def train():
 
 def test():
     game_state = initialise_game_state()
-    agent = Agent(gamma=0.99, learning_rate=5e-4, epsilon=1.0, epsilon_min=0.01, epsilon_decrement=1e-4,
+    agent = Agent(gamma=0.99, learning_rate=5e-4, epsilon=0.0, epsilon_min=0.01, epsilon_decrement=1e-4,
                   n_actions=len(PSGS.GameState.available_actions), input_dims=[48], memory_size=1000000,
                   batch_size=64, target_network_replace=1000)
-    agent.load_models(1950)
+
+    agent.load_models("28-04-2022_17-57-13_3950")
     agent.q_eval.eval()
     agent.q_next.eval()
 
-    num_episodes = 10000
+    num_episodes = 3000
+    failed_episodes = 0
     scores = []
     total_iterations = 0
 
@@ -296,6 +298,10 @@ def test():
                 #                   Score: {score} \
                 #                   Terminal: {terminal}")
 
+                if iterations > 1000:
+                    failed_episodes += 1
+                    break
+
             total_iterations += iterations
             scores.append(score)
             average_score = np.mean(scores[-100:])
@@ -306,6 +312,7 @@ def test():
 
             game_state = initialise_game_state(True)
 
+    print(f"\n[{num_episodes - failed_episodes}/{num_episodes}] EPISODES FINISHED")
     print(f"\nTOTAL ITERATIONS COMPLETED: {total_iterations}")
 
 
@@ -316,29 +323,30 @@ def initialise_game_state(randomise=False):
         x, y = randomise_puzzle_location(game_state)
         button = PSP.Button([x, y])
         game_state.add_puzzle(button)
-        # ez_door = PSP.EzDoor([x, y])
-        # game_state.add_puzzle(ez_door)
+
+        # x, y = randomise_puzzle_location(game_state)
+        # pressure_plate = PSP.PressurePlate([x, y], button)
+        # game_state.add_puzzle(pressure_plate)
 
         x, y = randomise_puzzle_location(game_state)
         door = PSP.Door([x, y], button)
         game_state.add_puzzle(door)
 
-        # game_state.set_terminal_puzzle(ez_door)
         game_state.set_starting_puzzle(button)
         game_state.set_terminal_puzzle(door)
 
     else:
-        # ez_door = PSP.EzDoor([1, 1])
-        # game_state.add_puzzle(ez_door)
         button = PSP.Button([1, 1])
         game_state.add_puzzle(button)
+
+        # pressure_plate = PSP.PressurePlate([1, 3], button)
+        # game_state.add_puzzle(pressure_plate)
 
         door = PSP.Door([2, 2], button)
         game_state.add_puzzle(door)
 
         game_state.set_starting_puzzle(button)
         game_state.set_terminal_puzzle(door)
-        # game_state.set_terminal_puzzle(ez_door)
 
     return game_state
 

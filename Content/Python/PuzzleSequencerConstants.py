@@ -1,43 +1,12 @@
-# IDLE_MOVE_REWARD = -10
-# VALID_MOVE_REWARD = -0.01
-# INVALID_MOVE_REWARD = -1
-#
-# # VALID_PUZZLE_REWARD = 0.9
-# VALID_PUZZLE_REWARD = 500
-# INVALID_PUZZLE_REWARD = -0.3
-# # COMPLETED_PUZZLE_REWARD = 0  # Trying to complete a completed puzzle
-# COMPLETED_PUZZLE_REWARD = -100  # Trying to complete a completed puzzle
-#
-# # TERMINAL_PUZZLE_REWARD = 1
-# TERMINAL_PUZZLE_REWARD = 1200
-#
-# # Heuristics
-# # ACTION_TAKEN_DISCOUNT = 0.001
-# ACTION_TAKEN_DISCOUNT = 0.1
-
-
-# IDLE_MOVE_REWARD = 0
-# VALID_MOVE_REWARD = 0.5
-# INVALID_MOVE_REWARD = 0.1
-#
-# VALID_PUZZLE_REWARD = 0.9
-# INVALID_PUZZLE_REWARD = 0.1
-# COMPLETED_PUZZLE_REWARD = 0  # Trying to complete a completed puzzle
-#
-# TERMINAL_PUZZLE_REWARD = 1
-#
-# # Heuristics
-# INVALID_ACTION_TAKEN_DISCOUNT = 0.0001  # todo make sure that it's only discounting invalid things, valid stuff should be rewarded normally
-
 IDLE_MOVE_REWARD = -10
 VALID_MOVE_REWARD = 0
 INVALID_MOVE_REWARD = -5
 
 VALID_PUZZLE_REWARD = 8
 INVALID_PUZZLE_REWARD = -5
-COMPLETED_PUZZLE_REWARD = -10  # Trying to complete a completed puzzle
+SOLVED_PUZZLE_REWARD = -10  # Trying to complete a completed puzzle
 
-TERMINAL_PUZZLE_REWARD = 10
+COMPLETED_PUZZLE_REWARD = 10
 
 # Heuristics
 INVALID_ACTION_TAKEN_DISCOUNT = 0.0001

@@ -119,7 +119,7 @@ class GameState:
                 # Terminate if the terminal puzzle is reached and completed
                 if self.selected_puzzle is self.terminal_puzzle:
                     is_terminal = True
-                    reward = PSC.TERMINAL_PUZZLE_REWARD
+                    reward = PSC.COMPLETED_PUZZLE_REWARD
                     return reward, is_terminal
 
             if valid_move:
@@ -217,12 +217,5 @@ class GameState:
         return goal_map
 
     def get_map_state(self):
-        # ar1 = self.get_map()
-        # ar2 = self.get_position_map()
-        # ar3 = self.get_goal_map()
-        # test = np.concatenate((self.get_map(), self.get_position_map(), self.get_goal_map()))
         array = np.array([self.get_map(), self.get_position_map(), self.get_goal_map()], dtype=np.float32).ravel()
-        # normalise_iterations = -(self.iterations / 1000)
-        # array = np.append(array, normalise_iterations)
-
         return array
