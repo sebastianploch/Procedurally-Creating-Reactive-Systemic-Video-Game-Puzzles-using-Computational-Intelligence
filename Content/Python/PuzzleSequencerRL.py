@@ -113,9 +113,9 @@ class Agent:
                            name="DDQN_Next", save_dir=self.save_dir)
 
         # Ensure that the model save path exists
-        dir_path = os.path.dirname(os.path.abspath(__file__)) + self.save_dir
+        dir_path = os.path.dirname(os.path.abspath(__file__)) + f"\\{self.save_dir}"
         if not os.path.exists(dir_path):
-            os.makedirs(self.save_dir)
+            os.makedirs(dir_path)
 
     def choose_action(self, observation):
         if np.random.random() > self.epsilon:  # Greedy Action
@@ -198,7 +198,7 @@ def train():
                   n_actions=len(PSGS.GameState.available_actions), input_dims=[48], memory_size=1000000,
                   batch_size=64, target_network_replace=1000)
 
-    num_episodes = 5000
+    num_episodes = 1000
     scores, epsilon_history = [], []
     total_iterations = 0
 
@@ -224,7 +224,7 @@ def train():
             observation = observation_
 
             # print(f"Iteration: {iterations} \
-            #       Action: {action} \
+            #       Action: {action} \1
             #       Reward: {reward} \
             #       Score: {score} \
             #       Terminal: {terminal} \
