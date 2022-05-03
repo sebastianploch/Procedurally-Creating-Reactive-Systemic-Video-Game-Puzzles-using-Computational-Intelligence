@@ -1,0 +1,5 @@
+numpy~=1.20.3
+torch~=1.9.0+cu111
+wandb~=0.12.14
+matplotlib~=3.5.1
+plotly~=5.7.0
