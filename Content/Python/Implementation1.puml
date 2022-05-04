@@ -1,50 +1,72 @@
 @startuml
 
-note top of PuzzleObject : Base class used to define concrete puzzle pieces. \nEach puzzle object stores its actual state and a dictionary \nof all possible states.
 abstract class PuzzleObject{
     +PuzzleObject(available_states)
 
     +int get_current_state()
+    +Tuple get_position()
     +Dict get_available_states()
     +bool is_completed()
+    +PuzzleObject get_depends_on()
 
-    +abstract update_puzzle(action)
+    +abstract update(action)
+    +abstract reset()
 
     -current_state : int
+    -position : Tuple
     -available_states : Dict
     -completed : bool
     -depends_on : PuzzleObject
+    -connects_to : PuzzleObject
 }
 
 class Button{
-    +Button()
-    +update_puzzle(action)
+    +Button(position)
+    +update(action)
+    +reset()
 }
 
 class Button implements PuzzleObject
 
 class Door{
-    +Door(depends_on)
-    +update_puzzle(action)
+    +Door(position, depends_on)
+    +update(action)
+    +reset()
 }
 
 class Door implements PuzzleObject
 
-note top of GameState : Represents the state that the game is. \nAlso stores all puzzles and updates their \nstates during stepping with provided action.
 class GameState{
     +GameState(puzzles, terminal_puzzle)
 
     +void step(action)
-    +int get_current_state()
-    +List get_puzzles()
+    +void reset()
 
+    +void update_selected_puzzle()
+    +void update_goal_puzzle()
+    +void add_puzzle(puzzle)
+    +void set_starting_puzzle(puzzle)
+    +PuzzleObject get_starting_puzzle()
+    +void set_terminal_puzzle(puzzle)
+    +PuzzleObject get_terminal_puzzle()
+
+    +int get_map_size()
+    +int get_map_width()
+    +int get_map_height()
+       +List get_puzzles()
+
+    +List get_map()
+    +List get_position_map()
+    +List get_goal_map()
+    +List get_map_state()
     -game_states : Dict
     -puzzles : List
+    -starting_puzzle : PuzzleObject
+    -terminal_puzzle : PuzzleObject
+    -map_width : int
+    -map_height : int
+    -map : List
 }
 
 GameState *-- PuzzleObject
-
-note "This solution would not work as the states are not encoded \nin a way that a deep neural network could efficiently learn from. \nAs dynamically cannot change the size of the state, instead \nall pieces have to be represented in a static way so that \nthe model is generalised and can be used without re-training" as Explanation #orange
-note bottom of Explanation #orange : This approach could be fine for just a solver, but will not be sufficient for solver and generator
-
 @enduml
