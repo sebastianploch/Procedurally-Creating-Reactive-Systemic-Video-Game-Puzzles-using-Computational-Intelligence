@@ -198,7 +198,7 @@ def train():
                   n_actions=len(PSGS.GameState.available_actions), input_dims=[48], memory_size=1000000,
                   batch_size=64, target_network_replace=1000)
 
-    num_episodes = 1000
+    num_episodes = 2000
     scores, epsilon_history = [], []
     total_iterations = 0
 
@@ -259,11 +259,11 @@ def test():
                   n_actions=len(PSGS.GameState.available_actions), input_dims=[48], memory_size=1000000,
                   batch_size=64, target_network_replace=1000)
 
-    agent.load_models("28-04-2022_17-57-13_3950")
+    agent.load_models("01-05-2022_09-33-39_150")
     agent.q_eval.eval()
     agent.q_next.eval()
 
-    num_episodes = 3000
+    num_episodes = 1000
     failed_episodes = 0
     scores = []
     total_iterations = 0
@@ -408,18 +408,18 @@ def plot_learning(x, scores, epsilons, filename):
 
 
 # based on https://localcoder.org/numpy-version-of-exponential-weighted-moving-average-equivalent-to-pandas-ewm
-def exponential_running_average(data, window):
-    alpha = 2 / (window + 1.0)
+def exponential_running_average(x, interval):
+    alpha = 2 / (interval + 1.0)
     alpha_rev = 1 - alpha
-    n = data.shape[0]
+    n = x.shape[0]
 
     pows = alpha_rev ** (np.arange(n + 1))
 
     scale_arr = 1 / pows[:-1]
-    offset = data[0] * pows[1:]
+    offset = x[0] * pows[1:]
     pw0 = alpha * alpha_rev ** (n - 1)
 
-    mult = data * pw0 * scale_arr
+    mult = x * pw0 * scale_arr
     cumsums = mult.cumsum()
     out = offset + cumsums * scale_arr[::-1]
     return out
